@@ -7,5 +7,5 @@ export default defineConfig({
     outDir: "../../build/web",
     emptyOutDir: true,
   },
-  plugins: [viteSingleFile()]
+  plugins: [viteSingleFile()],
 });
