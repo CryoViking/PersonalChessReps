@@ -2,9 +2,39 @@
 <meta charset="utf-8">
 
 <h1>Hello World</h1>
+
+
+<button id="ping-button">Ping C++</button>
+<p id="result">No Reply yet.</p>
+<button id="fail-ping-button">Fail to ping C++</button>
+
 <script>
-  document.querySelector("h1").textContent += " (from JS)";
+  const button = document.querySelector("#ping-button");
+  const secondButton = document.querySelector("#fail-ping-button");
+  const result = document.querySelector("#result");
+
+  button.addEventListener("click", async () => {
+    call_ping("e4", 42, {from: "e2"});
+  });
+
+  secondButton.addEventListener("click", async () => {
+    call_ping("bad")
+  });
+
+  async function call_ping(message) {
+    try {
+      const reply = await window.ping(message);
+      if (reply.ok) {
+        result.textContent = `C++ replied: ${reply.value}`;
+      } else {
+        result.textContent = `C++ replied: ${reply.error}`;
+      }
+    } catch (error) {
+      result.textContent = `Ping failed: ${error}`;
+    }
+  }
 </script>
+
 <style>
   h1 {
     font-size: 40pt;

@@ -28,6 +28,19 @@ int main() {
     webview::webview window(true, nullptr);
     window.set_title("Personal Chess Reps");
     window.set_size(SCREEN_WIDTH, SCREEN_HEIGHT, WEBVIEW_HINT_NONE);
+
+    window.bind("ping", [](const std::string& args) -> std::string {
+      try {
+        if(args == R"(["bad"])") {
+          throw std::runtime_error("ping was told to fail");
+        }
+        return R"({"ok": true, "value":"pong"})";
+      } catch(const std::exception& e) {
+        std::cerr << "ping error: " << e.what() << '\n';
+        return R"({"ok": false, "error":"ping failed"})";
+      }
+    });
+
     window.set_html(read_file(std::filesystem::path{PCR_WEB_DIR} / "index.html"));
     window.run();
   } catch(const webview::exception& e) {
@@ -35,6 +48,9 @@ int main() {
     return 1;
   } catch(const std::exception& e) {
     std::cerr << "std error: " << e.what() << '\n';
+    return 1;
+  } catch(...) {
+    std::cerr << "unknown error\n";
     return 1;
   }
   return 0;
