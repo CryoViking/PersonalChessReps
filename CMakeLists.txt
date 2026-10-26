@@ -9,25 +9,25 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-option(BUILD_DOCS "Create the Doxygen documentation target when Doxygen is available" ON)
+option(BUILD_DOCS "Create the Doxygen doc target when Doxygen is available" ON)
 
 if(BUILD_DOCS)
-    find_package(Doxygen 1.9 QUIET)
+  find_package(Doxygen 1.9 QUIET)
 
-    if(Doxygen_FOUND)
-        configure_file(
+  if(Doxygen_FOUND)
+    configure_file(
             "${CMAKE_SOURCE_DIR}/Doxyfile.in"
             "${CMAKE_BINARY_DIR}/Doxyfile"
             @ONLY)
 
-        add_custom_target(docs
+    add_custom_target(docs
             COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_BINARY_DIR}/Doxyfile"
             WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
             COMMENT "Generating Doxygen documentation"
             VERBATIM)
-    else()
-        message(WARNING
+  else()
+    message(WARNING
             "Doxygen was not found; the 'docs' target is unavailable. "
             "Install it with 'brew install doxygen' and reconfigure CMake.")
-    endif()
+  endif()
 endif()
