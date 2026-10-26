@@ -2,10 +2,13 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <webview/webview.h>
+
+using Json = nlohmann::json;
 
 constexpr int SCREEN_WIDTH = 1024;
 constexpr int SCREEN_HEIGHT = 768;
@@ -31,13 +34,19 @@ int main() {
 
     window.bind("ping", [](const std::string& args) -> std::string {
       try {
-        if(args == R"(["bad"])") {
+        const auto json = Json::parse(args);
+        const auto message = json.at(0).get<std::string>();
+        if(message == "error") {
           throw std::runtime_error("ping was told to fail");
         }
-        return R"({"ok": true, "value":"pong"})";
+        return Json{{"ok", true}, {"value", "pong: " + message}}.dump();
       } catch(const std::exception& e) {
         std::cerr << "ping error: " << e.what() << '\n';
-        return R"({"ok": false, "error":"ping failed"})";
+        const Json reply{{"ok", false}, {"error", e.what()}};
+        return reply.dump(-1, ' ', false, Json::error_handler_t::replace);
+      } catch(...) {
+        std::cerr << "ping error: unknown error\n";
+        return R"({"ok": false, "error": "unknown error"})";
       }
     });
 
