@@ -12,7 +12,7 @@ constraint rather than an afterthought.
 ## Design documents
 
 - [Proposed technology stack](tech-stack.md)
-- [Lichess opening catalogue acquisition and processing](lichess-opening-data.md)
+- [Lichess opening catalogue acquisition](lichess-opening-data.md)
 
 ## Documentation policy
 
