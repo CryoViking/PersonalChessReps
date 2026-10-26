@@ -43,9 +43,15 @@ fetchcontent_declare(webview
   GIT_REPOSITORY https://github.com/webview/webview
   GIT_TAG 782c12ccc3e9358c14a42b41baddbf50bfc28614 # 0.12.0
   SYSTEM)
-fetchcontent_makeavailable(webview)
+fetchcontent_declare(nlohmann_json
+  URL https://github.com/nlohmann/json/releases/download/v3.12.0/json.tar.xz
+  URL_HASH SHA256=42f6e95cad6ec532fd372391373363b62a14af6d771056dbfc86160e6dfff7aa
+  SYSTEM)
+
+set(JSON_MultipleHeaders OFF)
+fetchcontent_makeavailable(webview nlohmann_json)
 
 add_executable(pcr src/cpp/main.cpp)
-target_link_libraries(pcr PRIVATE webview::core)
+target_link_libraries(pcr PRIVATE webview::core nlohmann_json::nlohmann_json)
 target_compile_definitions(pcr
   PRIVATE PCR_WEB_DIR="${PROJECT_SOURCE_DIR}/src/web")
