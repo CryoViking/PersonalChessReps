@@ -1,0 +1,42 @@
+# This file is configured by CMake. Edit it rather than the generated copy in
+# the build directory.
+
+PROJECT_NAME           = "Personal Chess Reps"
+PROJECT_NUMBER         = "@PROJECT_VERSION@"
+PROJECT_BRIEF          = "A local-first chess repertoire trainer"
+OUTPUT_DIRECTORY       = "@CMAKE_BINARY_DIR@/docs"
+CREATE_SUBDIRS         = NO
+
+INPUT                  = "@CMAKE_SOURCE_DIR@/docs" \
+                         "@CMAKE_SOURCE_DIR@/include" \
+                         "@CMAKE_SOURCE_DIR@/src"
+RECURSIVE              = YES
+FILE_PATTERNS          = *.md *.hpp *.h *.cpp *.cc *.cxx
+EXCLUDE_PATTERNS       = */build/* */node_modules/*
+USE_MDFILE_AS_MAINPAGE = "@CMAKE_SOURCE_DIR@/docs/overview.md"
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+
+EXTRACT_ALL            = NO
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = NO
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+REFERENCED_BY_RELATION = YES
+REFERENCES_RELATION    = YES
+
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_TREEVIEW      = YES
+FULL_SIDEBAR           = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_AS_ERROR          = NO
+
+HAVE_DOT               = NO
+QUIET                  = NO
