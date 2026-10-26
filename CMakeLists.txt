@@ -31,3 +31,19 @@ if(BUILD_DOCS)
             "Install it with 'brew install doxygen' and reconfigure CMake.")
   endif()
 endif()
+
+include(FetchContent)
+
+# webview builds C shared/static libraries by default; the C++ API is
+# header-only, so only its header target is needed.
+set(WEBVIEW_BUILD_SHARED_LIBRARY OFF)
+set(WEBVIEW_BUILD_STATIC_LIBRARY OFF)
+
+fetchcontent_declare(webview
+  GIT_REPOSITORY https://github.com/webview/webview
+  GIT_TAG 782c12ccc3e9358c14a42b41baddbf50bfc28614 # 0.12.0
+  SYSTEM)
+fetchcontent_makeavailable(webview)
+
+add_executable(pcr src/main.cpp)
+target_link_libraries(pcr PRIVATE webview::core)
