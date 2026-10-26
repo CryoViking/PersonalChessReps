@@ -4,7 +4,7 @@ const result = requireElement<HTMLParagraphElement>("#result");
 
 function requireElement<T extends HTMLElement>(id: string) {
   const element = document.querySelector<T>(id);
-  if (element === null) throw new Error(`missing {id}`);
+  if (element === null) throw new Error(`missing ${id}`);
   return element;
 }
 
