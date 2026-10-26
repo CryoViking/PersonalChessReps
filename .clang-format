@@ -6,4 +6,5 @@ PointerAlignment: Left
 SpaceBeforeParens: Never
 IndentCaseLabels: true
 InsertNewlineAtEOF: true
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
 ...

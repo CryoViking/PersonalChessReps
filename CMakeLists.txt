@@ -54,4 +54,4 @@ fetchcontent_makeavailable(webview nlohmann_json)
 add_executable(pcr src/cpp/main.cpp)
 target_link_libraries(pcr PRIVATE webview::core nlohmann_json::nlohmann_json)
 target_compile_definitions(pcr
-  PRIVATE PCR_WEB_DIR="${PROJECT_SOURCE_DIR}/src/web")
+  PRIVATE PCR_WEB_DIST="${PROJECT_SOURCE_DIR}/build/web")

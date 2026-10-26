@@ -20,9 +20,9 @@ async function callPing(message: string) {
   try {
     const reply = await window.ping(message);
     if (reply.ok) {
-      result.textContent = `C++ replied: ${reply.value}`;
+      result.textContent = `C++ replied with success: ${reply.value}`;
     } else {
-      result.textContent = `C++ replied: ${reply.error}`;
+      result.textContent = `C++ replied with error: ${reply.error}`;
     }
   } catch (error) {
     result.textContent = `Ping failed: ${error}`;

@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -50,7 +51,11 @@ int main() {
       }
     });
 
-    window.set_html(read_file(std::filesystem::path{PCR_WEB_DIR} / "index.html"));
+    // NOLINTNEXTLINE(concurrency-mt-unsafe): This is to be expected at the moment
+    const auto* const url = std::getenv("PCR_DEV_URL");
+    if(url != nullptr) window.navigate(url);
+    else window.set_html(read_file(std::filesystem::path{PCR_WEB_DIST} / "index.html"));
+
     window.run();
   } catch(const webview::exception& e) {
     std::cerr << "webview error: " << e.what() << '\n';

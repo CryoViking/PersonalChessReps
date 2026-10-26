@@ -1,8 +1,6 @@
-export { };
+export {};
 
-type PingReply =
-  | { ok: true; value: string }
-  | { ok: false; error: string };
+type PingReply = { ok: true; value: string } | { ok: false; error: string };
 
 declare global {
   interface Window {
