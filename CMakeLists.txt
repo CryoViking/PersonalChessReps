@@ -45,5 +45,7 @@ fetchcontent_declare(webview
   SYSTEM)
 fetchcontent_makeavailable(webview)
 
-add_executable(pcr src/main.cpp)
+add_executable(pcr src/cpp/main.cpp)
 target_link_libraries(pcr PRIVATE webview::core)
+target_compile_definitions(pcr
+  PRIVATE PCR_WEB_DIR="${PROJECT_SOURCE_DIR}/src/web")
