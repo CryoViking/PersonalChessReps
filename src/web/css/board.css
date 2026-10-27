@@ -44,7 +44,8 @@ body {
 /* Upper layers let pointer events fall through to #board */
 .board-highlights,
 .board-pieces,
-.board-arrows {
+.board-arrows,
+.board-drag {
   pointer-events: none;
 }
 
@@ -118,6 +119,17 @@ body {
   display: block;
   width: 100%;
   height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* The piece being dragged: one square in size, centred on the pointer.
+   TS sets left/top in % of the board; translate pulls the image back by half its own size. */
+.drag-piece {
+  position: absolute;
+  width: 12.5%;
+  height: 12.5%;
+  transform: translate(-50%, -50%);
   user-select: none;
   -webkit-user-drag: none;
 }

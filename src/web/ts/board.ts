@@ -113,13 +113,14 @@ export function renderSquares(container: HTMLElement): void {
   container.replaceChildren(...cells);
 }
 
-export function renderPieces(container: HTMLElement, board: Board): void {
+export function renderPieces(container: HTMLElement, board: Board, hidden: Square | null): void {
   const cells: HTMLDivElement[] = [];
 
   for (let displayRow = 0; displayRow < 8; displayRow++) {
     for (let displayCol = 0; displayCol < 8; displayCol++) {
       const cell = document.createElement("div");
-      const piece = board[squareAtDisplay(displayCol, displayRow)];
+      const square = squareAtDisplay(displayCol, displayRow);
+      const piece = square === hidden ? null : board[square];
 
       if (piece) {
         const image = document.createElement("img");
@@ -133,6 +134,28 @@ export function renderPieces(container: HTMLElement, board: Board): void {
   }
 
   container.replaceChildren(...cells);
+}
+
+// The piece "in hand" during a drag; null removes it.
+export function renderDragPiece(layer: HTMLElement, piece: Piece | null): void {
+  if (piece === null) {
+    layer.replaceChildren();
+    return;
+  }
+
+  const image = document.createElement("img");
+  image.classList.add("drag-piece");
+  image.src = PIECE_IMAGES[piece];
+  image.alt = PIECE_NAMES[piece];
+  layer.replaceChildren(image);
+}
+
+// Moves the ghost to a point in board units (0..8). One unit is 12.5% of the board.
+export function positionDragPiece(layer: HTMLElement, point: Point): void {
+  const image = layer.firstElementChild;
+  if (!(image instanceof HTMLElement)) return;
+  image.style.left = `${point.x * 12.5}%`;
+  image.style.top = `${point.y * 12.5}%`;
 }
 
 export function renderHighlights(

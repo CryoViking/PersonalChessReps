@@ -29,6 +29,19 @@ export function rowOf(square: Square): number {
   return Math.floor(square / 8);
 }
 
+export function isWhite(piece: Piece): boolean {
+  return piece === piece.toUpperCase();
+}
+
+// Moves whatever is on `from` to `to`, capturing anything there. No legality checks:
+// that's the C++ engine's job later. Returns a new board; the input is never changed.
+export function applyMove(board: Board, from: Square, to: Square): Board {
+  const next = [...board];
+  next[to] = board[from] ?? null;
+  next[from] = null;
+  return next;
+}
+
 export function boardFromFen(placement: string): Board {
   const board: (Piece | null)[] = new Array(64).fill(null);
 

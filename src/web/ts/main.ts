@@ -1,7 +1,15 @@
 import "../css/board.css";
-import { type Arrow, renderArrows, renderHighlights, renderPieces, renderSquares } from "./board";
-import { type Square, START_BOARD } from "./chess";
-import { squareFromPointer } from "./input";
+import {
+  type Arrow,
+  positionDragPiece,
+  renderArrows,
+  renderDragPiece,
+  renderHighlights,
+  renderPieces,
+  renderSquares,
+} from "./board";
+import { applyMove, type Board, isWhite, type Square, START_BOARD } from "./chess";
+import { pointerToBoard, squareFromPointer } from "./input";
 
 const LEFT_CLICK = 0;
 const RIGHT_CLICK = 2;
@@ -12,21 +20,32 @@ function requireElement<T extends Element>(selector: string) {
   return element;
 }
 
+// Board state
+let position: Board = START_BOARD;
+
 const markedSquares = new Set<Square>();
-let selectedSquare: Square | null = null;
 const arrows: Arrow[] = [];
+let selectedSquare: Square | null = null;
 let rightDragStart: Square | null = null;
 let rightDragCurrent: Square | null = null;
+let leftDrag: { from: Square; wasSelected: boolean } | null = null;
 
 const squaresLayer = requireElement<HTMLElement>(".board-squares");
 const piecesLayer = requireElement<HTMLElement>(".board-pieces");
 const highlightsLayer = requireElement<HTMLElement>(".board-highlights");
 const arrowsLayer = requireElement<SVGGElement>(".arrow-lines");
+const dragLayer = requireElement<HTMLElement>(".board-drag");
 const board = requireElement<HTMLElement>("#board");
 
 renderSquares(squaresLayer);
-renderPieces(piecesLayer, START_BOARD);
 redraw();
+
+// No legality yet; just stops a piece capturing its own side.
+function canMoveTo(from: Square, to: Square): boolean {
+  const mover = position[from];
+  const target = position[to];
+  return !(mover && target && isWhite(mover) === isWhite(target));
+}
 
 function toggleMark(square: Square): void {
   if (markedSquares.has(square)) markedSquares.delete(square);
@@ -45,6 +64,7 @@ function redraw(): void {
     shown = [...arrows, { from: rightDragStart, to: rightDragCurrent }];
   }
 
+  renderPieces(piecesLayer, position, leftDrag?.from ?? null);
   renderHighlights(highlightsLayer, selectedSquare, markedSquares);
   renderArrows(arrowsLayer, shown);
 }
@@ -54,7 +74,25 @@ board.addEventListener("pointerdown", (event) => {
   if (event.button === LEFT_CLICK) {
     markedSquares.clear();
     arrows.length = 0;
-    selectedSquare = square === selectedSquare ? null : square;
+
+    const piece = square === null ? undefined : position[square];
+
+    if (square === null) selectedSquare = null;
+    else if (
+      selectedSquare !== null &&
+      square !== selectedSquare &&
+      canMoveTo(selectedSquare, square)
+    ) {
+      position = applyMove(position, selectedSquare, square);
+      selectedSquare = null;
+    } else if (piece) {
+      leftDrag = { from: square, wasSelected: square === selectedSquare };
+      selectedSquare = square;
+      board.setPointerCapture(event.pointerId);
+      renderDragPiece(dragLayer, piece);
+      positionDragPiece(dragLayer, pointerToBoard(board, event));
+    } else selectedSquare = null;
+
     redraw();
   } else if (event.button === RIGHT_CLICK) {
     rightDragStart = square;
@@ -64,6 +102,7 @@ board.addEventListener("pointerdown", (event) => {
 });
 
 board.addEventListener("pointermove", (event) => {
+  if (leftDrag !== null) positionDragPiece(dragLayer, pointerToBoard(board, event));
   if (rightDragStart === null) return;
 
   const square = squareFromPointer(board, event);
@@ -74,18 +113,34 @@ board.addEventListener("pointermove", (event) => {
 });
 
 board.addEventListener("pointerup", (event) => {
-  if (event.button !== RIGHT_CLICK || rightDragStart === null) return;
+  if (event.button === LEFT_CLICK && leftDrag !== null) {
+    const end = squareFromPointer(board, event);
 
-  const end = squareFromPointer(board, event);
-  if (end === rightDragStart) toggleMark(end);
-  else if (end !== null) toggleArrow(rightDragStart, end);
+    if (end !== null && end !== leftDrag.from && canMoveTo(leftDrag.from, end)) {
+      position = applyMove(position, leftDrag.from, end);
+    }
 
-  rightDragStart = null;
-  rightDragCurrent = null;
-  redraw();
+    // Only a first click (released where it was pressed) keeps the piece selected.
+    const isFirstClicked = end === leftDrag.from && !leftDrag.wasSelected;
+    if (!isFirstClicked) selectedSquare = null;
+
+    leftDrag = null;
+    renderDragPiece(dragLayer, null);
+    redraw();
+  } else if (event.button === RIGHT_CLICK && rightDragStart !== null) {
+    const end = squareFromPointer(board, event);
+    if (end === rightDragStart) toggleMark(end);
+    else if (end !== null) toggleArrow(rightDragStart, end);
+
+    rightDragStart = null;
+    rightDragCurrent = null;
+    redraw();
+  }
 });
 
 board.addEventListener("pointercancel", () => {
+  leftDrag = null;
+  renderDragPiece(dragLayer, null);
   rightDragStart = null;
   rightDragCurrent = null;
   redraw();
