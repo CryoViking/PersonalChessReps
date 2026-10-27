@@ -11,7 +11,7 @@ import whitePawn from "../pieces/wP.svg";
 import whiteQueen from "../pieces/wQ.svg";
 import whiteRook from "../pieces/wR.svg";
 
-import { type Board, type Piece, type Square, squareAt } from "./chess";
+import { type Board, colOf, type Piece, rowOf, type Square, squareAt } from "./chess";
 
 export type Arrow = { from: Square; to: Square };
 export type Point = { x: number; y: number };
@@ -74,28 +74,43 @@ function normal(direction: Point): Point {
 }
 
 export function squareCenter(square: Square): Point {
-  const col: number = square % 8;
-  const row: number = Math.floor(square / 8);
-  const displayRow = 7 - row;
-  return { x: col + 0.5, y: displayRow + 0.5 };
+  const displayRow = 7 - rowOf(square);
+  return { x: colOf(square) + 0.5, y: displayRow + 0.5 };
 }
 
+const FILES = "abcdefgh";
+
 export function renderSquares(container: HTMLElement): void {
-  const squares: HTMLDivElement[] = [];
+  const cells: HTMLDivElement[] = [];
 
   for (let displayRow = 0; displayRow < 8; displayRow++) {
     for (let displayCol = 0; displayCol < 8; displayCol++) {
-      const square = document.createElement("div");
+      const square = squareAtDisplay(displayCol, displayRow);
+      const cell = document.createElement("div");
 
-      if ((displayRow + displayCol) % 2 === 1) square.classList.add("square-dark");
-      else square.classList.add("square-light");
+      if ((displayRow + displayCol) % 2 === 1) cell.classList.add("square-dark");
+      else cell.classList.add("square-light");
+      cell.dataset.square = String(square);
 
-      square.dataset.square = String(squareAtDisplay(displayCol, displayRow));
-      squares.push(square);
+      // Labels sit on the display edges; their text comes from whichever square is there.
+      if (displayCol === 0) {
+        const label = document.createElement("span");
+        label.classList.add("coord", "coord-rank");
+        label.textContent = String(rowOf(square) + 1);
+        cell.append(label);
+      }
+      if (displayRow === 7) {
+        const label = document.createElement("span");
+        label.classList.add("coord", "coord-file");
+        label.textContent = FILES.charAt(colOf(square));
+        cell.append(label);
+      }
+
+      cells.push(cell);
     }
   }
 
-  container.replaceChildren(...squares);
+  container.replaceChildren(...cells);
 }
 
 export function renderPieces(container: HTMLElement, board: Board): void {

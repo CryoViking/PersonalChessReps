@@ -21,6 +21,14 @@ export function squareAt(col: number, row: number): Square {
   return row * 8 + col;
 }
 
+export function colOf(square: Square): number {
+  return square % 8;
+}
+
+export function rowOf(square: Square): number {
+  return Math.floor(square / 8);
+}
+
 export function boardFromFen(placement: string): Board {
   const board: (Piece | null)[] = new Array(64).fill(null);
 
