@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["src/web/**"]
+    "includes": ["src/web/**", "!src/web/pieces"]
   },
   "formatter": {
     "enabled": true,

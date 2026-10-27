@@ -1,0 +1,68 @@
+/* Design tokens: every colour lives here, so restyling is one place */
+:root {
+  --page-bg: #302e2b;
+  --square-light: #eeeed2;
+  --square-dark: #769656;
+}
+
+/* The page: no default margin, full window height, board centred */
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--page-bg);
+  display: grid;
+  place-items: center;
+}
+
+/* The board frame: the reference box its layers position against */
+.board {
+  position: relative;
+  width: min(80vh, 80vw);
+  aspect-ratio: 1;
+}
+
+/* Every layer: stacked exactly on top of the frame */
+.board > * {
+  position: absolute;
+  inset: 0;
+}
+
+/* The grid layers: 8×8 cells, filled in order (top-left first) by TS */
+.board-squares,
+.board-highlights,
+.board-pieces {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+}
+
+/* Upper layers let pointer events fall through to #board */
+.board-highlights,
+.board-pieces,
+.board-arrows {
+  pointer-events: none;
+}
+
+/* Arrows: SVG sized to the frame; one viewBox unit is one square */
+.board-arrows {
+  width: 100%;
+  height: 100%;
+}
+
+/* Square colours, chosen per square by TS */
+.square-light {
+  background: var(--square-light);
+}
+
+.square-dark {
+  background: var(--square-dark);
+}
+
+/* Piece images: fill their cell, can't be selected or dragged by WebKit */
+.board-pieces img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
