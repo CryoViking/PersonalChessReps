@@ -3,6 +3,8 @@
   --page-bg: #302e2b;
   --square-light: #eeeed2;
   --square-dark: #769656;
+  --highlight-selected: rgb(255 255 51 / 50%);
+  --highlight-marked: rgb(235 97 80 / 80%);
 }
 
 /* The page: no default margin, full window height, board centred */
@@ -56,6 +58,16 @@ body {
 
 .square-dark {
   background: var(--square-dark);
+}
+
+/* Highlight cells: translucent tints over the squares, set per cell by TS.
+   Marked comes second so it wins when a square is both. */
+.highlight-selected {
+  background: var(--highlight-selected);
+}
+
+.highlight-marked {
+  background: var(--highlight-marked);
 }
 
 /* Piece images: fill their cell, can't be selected or dragged by WebKit */
