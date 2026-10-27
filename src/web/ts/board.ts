@@ -11,7 +11,7 @@ import whitePawn from "../pieces/wP.svg";
 import whiteQueen from "../pieces/wQ.svg";
 import whiteRook from "../pieces/wR.svg";
 
-import { type Board, colOf, type Piece, rowOf, type Square, squareAt } from "./chess";
+import { type Board, colOf, type Move, type Piece, rowOf, type Square, squareAt } from "./chess";
 
 export type Arrow = { from: Square; to: Square };
 export type Point = { x: number; y: number };
@@ -162,6 +162,7 @@ export function renderHighlights(
   container: HTMLElement,
   selected: Square | null,
   marked: Set<Square>,
+  lastMove: Move | null,
 ): void {
   const cells: HTMLDivElement[] = [];
 
@@ -171,6 +172,9 @@ export function renderHighlights(
       const cell = document.createElement("div");
       if (square === selected) cell.classList.add("highlight-selected");
       if (marked.has(square)) cell.classList.add("highlight-marked");
+      if (lastMove !== null && (square === lastMove.from || square === lastMove.to)) {
+        cell.classList.add("highlight-last-move");
+      }
 
       cells.push(cell);
     }

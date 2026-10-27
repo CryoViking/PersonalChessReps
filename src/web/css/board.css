@@ -100,7 +100,8 @@ body {
 
 /* Highlight cells: translucent tints over the squares, set per cell by TS.
    Marked comes second so it wins when a square is both. */
-.highlight-selected {
+.highlight-selected,
+.highlight-last-move {
   background: var(--highlight-selected);
 }
 

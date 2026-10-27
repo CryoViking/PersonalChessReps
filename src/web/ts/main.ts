@@ -8,7 +8,7 @@ import {
   renderPieces,
   renderSquares,
 } from "./board";
-import { applyMove, type Board, isWhite, type Square, START_BOARD } from "./chess";
+import { applyMove, type Board, isWhite, type Move, type Square, START_BOARD } from "./chess";
 import { pointerToBoard, squareFromPointer } from "./input";
 
 const LEFT_CLICK = 0;
@@ -22,6 +22,7 @@ function requireElement<T extends Element>(selector: string) {
 
 // Board state
 let position: Board = START_BOARD;
+let lastMove: Move | null = null;
 
 const markedSquares = new Set<Square>();
 const arrows: Arrow[] = [];
@@ -47,6 +48,11 @@ function canMoveTo(from: Square, to: Square): boolean {
   return !(mover && target && isWhite(mover) === isWhite(target));
 }
 
+function makeMove(from: Square, to: Square): void {
+  position = applyMove(position, from, to);
+  lastMove = { from, to };
+}
+
 function toggleMark(square: Square): void {
   if (markedSquares.has(square)) markedSquares.delete(square);
   else markedSquares.add(square);
@@ -65,7 +71,7 @@ function redraw(): void {
   }
 
   renderPieces(piecesLayer, position, leftDrag?.from ?? null);
-  renderHighlights(highlightsLayer, selectedSquare, markedSquares);
+  renderHighlights(highlightsLayer, selectedSquare, markedSquares, lastMove);
   renderArrows(arrowsLayer, shown);
 }
 
@@ -83,7 +89,7 @@ board.addEventListener("pointerdown", (event) => {
       square !== selectedSquare &&
       canMoveTo(selectedSquare, square)
     ) {
-      position = applyMove(position, selectedSquare, square);
+      makeMove(selectedSquare, square);
       selectedSquare = null;
     } else if (piece) {
       leftDrag = { from: square, wasSelected: square === selectedSquare };
@@ -117,7 +123,7 @@ board.addEventListener("pointerup", (event) => {
     const end = squareFromPointer(board, event);
 
     if (end !== null && end !== leftDrag.from && canMoveTo(leftDrag.from, end)) {
-      position = applyMove(position, leftDrag.from, end);
+      makeMove(leftDrag.from, end);
     }
 
     // Only a first click (released where it was pressed) keeps the piece selected.

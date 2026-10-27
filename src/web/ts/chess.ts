@@ -13,6 +13,8 @@ export type Square = number;
 
 export type Board = readonly (Piece | null)[];
 
+export type Move = { from: Square; to: Square };
+
 export function isPiece(c: string): c is Piece {
   return c.length === 1 && "PNBRQKpnbrqk".includes(c);
 }
