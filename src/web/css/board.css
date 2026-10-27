@@ -5,6 +5,7 @@
   --square-dark: #769656;
   --highlight-selected: rgb(255 255 51 / 50%);
   --highlight-marked: rgb(235 97 80 / 80%);
+  --arrow: rgb(255 170 0);
 }
 
 /* The page: no default margin, full window height, board centred */
@@ -68,6 +69,12 @@ body {
 
 .highlight-marked {
   background: var(--highlight-marked);
+}
+
+/* Arrows: one polygon each, shape computed in TS. Faded per arrow, so crossings show darker. */
+.arrow-lines polygon {
+  fill: var(--arrow);
+  opacity: 0.65;
 }
 
 /* Piece images: fill their cell, can't be selected or dragged by WebKit */
