@@ -16,6 +16,7 @@ const markedSquares = new Set<Square>();
 let selectedSquare: Square | null = null;
 const arrows: Arrow[] = [];
 let rightDragStart: Square | null = null;
+let rightDragCurrent: Square | null = null;
 
 const squaresLayer = requireElement<HTMLElement>(".board-squares");
 const piecesLayer = requireElement<HTMLElement>(".board-pieces");
@@ -25,7 +26,7 @@ const board = requireElement<HTMLElement>("#board");
 
 renderSquares(squaresLayer);
 renderPieces(piecesLayer, START_BOARD);
-renderHighlights(highlightsLayer, selectedSquare, markedSquares);
+redraw();
 
 function toggleMark(square: Square): void {
   if (markedSquares.has(square)) markedSquares.delete(square);
@@ -38,18 +39,38 @@ function toggleArrow(from: Square, to: Square): void {
   else arrows.splice(index, 1);
 }
 
+function redraw(): void {
+  let shown = arrows;
+  if (rightDragStart !== null && rightDragCurrent !== null && rightDragStart !== rightDragCurrent) {
+    shown = [...arrows, { from: rightDragStart, to: rightDragCurrent }];
+  }
+
+  renderHighlights(highlightsLayer, selectedSquare, markedSquares);
+  renderArrows(arrowsLayer, shown);
+}
+
 board.addEventListener("pointerdown", (event) => {
   const square = squareFromPointer(board, event);
   if (event.button === LEFT_CLICK) {
     markedSquares.clear();
     arrows.length = 0;
     selectedSquare = square === selectedSquare ? null : square;
-    renderHighlights(highlightsLayer, selectedSquare, markedSquares);
-    renderArrows(arrowsLayer, arrows);
+    redraw();
   } else if (event.button === RIGHT_CLICK) {
     rightDragStart = square;
+    rightDragCurrent = square;
     board.setPointerCapture(event.pointerId);
   }
+});
+
+board.addEventListener("pointermove", (event) => {
+  if (rightDragStart === null) return;
+
+  const square = squareFromPointer(board, event);
+  if (square === rightDragCurrent) return;
+
+  rightDragCurrent = square;
+  redraw();
 });
 
 board.addEventListener("pointerup", (event) => {
@@ -60,12 +81,14 @@ board.addEventListener("pointerup", (event) => {
   else if (end !== null) toggleArrow(rightDragStart, end);
 
   rightDragStart = null;
-  renderHighlights(highlightsLayer, selectedSquare, markedSquares);
-  renderArrows(arrowsLayer, arrows);
+  rightDragCurrent = null;
+  redraw();
 });
 
 board.addEventListener("pointercancel", () => {
   rightDragStart = null;
+  rightDragCurrent = null;
+  redraw();
 });
 
 board.addEventListener("contextmenu", (event) => {
