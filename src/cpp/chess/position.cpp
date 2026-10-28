@@ -167,7 +167,7 @@ std::optional<Square> parse_en_passant(std::string_view field) {
   return square;
 }
 
-// Parses a FEN move counter: a whole number, with no sign on trailing characters.
+// Parses a FEN move counter: a whole number, with no sign or trailing characters.
 // `name` is only for the error message.
 int parse_counter(std::string_view field, std::string_view name, int minimum) {
   int value = 0;
