@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <string>
 #include <string_view>
 
 #include "chess/types.hpp"
@@ -27,6 +28,7 @@ public:
   [[nodiscard]] std::optional<Square> en_passant() const;
   [[nodiscard]] int halfmove_clock() const;
   [[nodiscard]] int fullmove_number() const;
+  [[nodiscard]] std::string to_fen() const;
 
 private:
   Position() = default;

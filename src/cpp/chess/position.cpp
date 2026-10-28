@@ -5,6 +5,7 @@
 #include <format>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <system_error>
 #include <vector>
@@ -64,6 +65,32 @@ std::optional<Piece> piece_from_fen_char(char c) {
   return Piece{.colour = colour, .type = *type};
 }
 
+// The inverse of piece_from_fen_char: uppercase for White, lowercase for Black.
+char fen_char(Piece piece) {
+  char letter = 'p';
+  switch(piece.type) {
+    case chess::PieceType::Pawn:
+      letter = 'p';
+      break;
+    case PieceType::Knight:
+      letter = 'n';
+      break;
+    case PieceType::Bishop:
+      letter = 'b';
+      break;
+    case PieceType::Rook:
+      letter = 'r';
+      break;
+    case PieceType::Queen:
+      letter = 'q';
+      break;
+    case PieceType::King:
+      letter = 'k';
+      break;
+  }
+  return piece.colour == Colour::White ? static_cast<char>(letter - 'a' + 'A') : letter;
+}
+
 // Splits on single spaces. The views point into `text`, so they are only valid while it is.
 std::vector<std::string_view> split_fields(std::string_view text) {
   std::vector<std::string_view> fields;
@@ -111,6 +138,41 @@ Board parse_placement(std::string_view placement) {
   if(row != 0 || col != BOARD_SIZE)
     throw std::invalid_argument("FEN placement is incomplete: expected 8 ranks of 8 files");
   return board;
+}
+
+// The inverse of parse_placement: rank 8 first, runs of empty squares as digits.
+std::string placement_to_fen(const Board& board) {
+  std::string result;
+
+  for(int row = BOARD_SIZE - 1; row >= 0; --row) {
+    int empty = 0;
+    for(int col = 0; col < BOARD_SIZE; ++col) {
+      const auto& piece = board.at(static_cast<std::size_t>(square_at(col, row)));
+      if(piece) {
+        if(empty > 0) {
+          result += static_cast<char>('0' + empty);
+          empty = 0;
+        }
+        result += fen_char(*piece);
+      } else {
+        ++empty;
+      }
+    }
+    if(empty > 0) result += static_cast<char>('0' + empty);
+    if(row > 0) result += '/';
+  }
+
+  return result;
+}
+
+// The inverse of parse_castling. Always KQkq order, so the output is canonical.
+std::string castling_to_fen(const CastlingRights& rights) {
+  std::string result;
+  if(rights.white_kingside) result += 'K';
+  if(rights.white_queenside) result += 'Q';
+  if(rights.black_kingside) result += 'k';
+  if(rights.black_queenside) result += 'q';
+  return result.empty() ? "-" : result;
 }
 
 // Parses the second FEN field: "w" or "b"
@@ -204,6 +266,13 @@ Position Position::from_fen(std::string_view fen) {
         parse_counter(fields[FULLMOVE_NUMBER], "fullmove number", MIN_FULLMOVE_NUMBER);
   }
   return position;
+}
+
+std::string Position::to_fen() const {
+  return std::format("{} {} {} {} {} {}", placement_to_fen(board_),
+                     side_to_move_ == Colour::White ? "w" : "b", castling_to_fen(castling_),
+                     en_passant_ ? square_name(*en_passant_) : "-", halfmove_clock_,
+                     fullmove_number_);
 }
 
 std::optional<Piece> Position::piece_at(Square square) const {

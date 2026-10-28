@@ -1,7 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 
 #include "chess/position.hpp"
@@ -179,5 +181,26 @@ TEST_CASE("from_fen rejects the wrong number of fields") {
   }
   SECTION("seven fields") {
     REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 1 x"), std::invalid_argument);
+  }
+}
+
+TEST_CASE("to_fen round-trips canonical FENs") {
+  const std::string fen =
+      GENERATE(as<std::string>{}, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+               "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+               "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2",
+               "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+               "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1", "r3k2r/8/8/8/8/8/8/R3K2R b Kq - 3 17");
+
+  REQUIRE(Position::from_fen(fen).to_fen() == fen);
+}
+
+TEST_CASE("to_fen writes canonical output") {
+  SECTION("castling rights in KQkq order") {
+    REQUIRE(Position::from_fen("8/8/8/8/8/8/8/8 w qK - 0 1").to_fen() ==
+            "8/8/8/8/8/8/8/8 w Kq - 0 1");
+  }
+  SECTION("default move counters for a four-field EPD") {
+    REQUIRE(Position::from_fen("8/8/8/8/8/8/8/8 w - -").to_fen() == "8/8/8/8/8/8/8/8 w - - 0 1");
   }
 }

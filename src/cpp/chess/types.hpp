@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <string_view>
 
 namespace chess {
@@ -26,6 +27,11 @@ constexpr std::optional<Square> square_from_name(std::string_view name) {
   if(col < 'a' || col > 'h' || row < '1' || row > '8') return std::nullopt;
 
   return square_at(col - 'a', row - '1');
+}
+
+// square_at(4, 2) -> "e3". The inverse of square_from_name.
+constexpr std::string square_name(Square square) {
+  return {static_cast<char>('a' + col_of(square)), static_cast<char>('1' + row_of(square))};
 }
 
 enum class Colour : std::uint8_t { White, Black };

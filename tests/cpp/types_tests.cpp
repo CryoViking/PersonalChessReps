@@ -34,3 +34,10 @@ TEST_CASE("pieces compare by colour and type") {
   REQUIRE(white_knight != Piece{Colour::Black, PieceType::Knight});
   REQUIRE(white_knight != Piece{Colour::White, PieceType::Bishop});
 }
+
+TEST_CASE("square_name and square_from_name invert each other") {
+  for(Square s = 0; s < SQUARE_COUNT; ++s) {
+    CAPTURE(s);
+    REQUIRE(square_from_name(square_name(s)) == s);
+  }
+}
