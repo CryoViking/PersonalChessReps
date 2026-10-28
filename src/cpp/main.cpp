@@ -22,7 +22,7 @@ namespace {
   }
 
   std::ostringstream contents;
-  contents << file.rdbuf(); // read the buffer
+  contents << file.rdbuf();
   return contents.str();
 }
 } // namespace
@@ -51,7 +51,7 @@ int main() {
       }
     });
 
-    // NOLINTNEXTLINE(concurrency-mt-unsafe): It's read once at startip, before any threads exist
+    // NOLINTNEXTLINE(concurrency-mt-unsafe): It's read once at startup, before any threads exist
     const auto* const url = std::getenv("PCR_DEV_URL");
     if(url != nullptr) window.navigate(url);
     else window.set_html(read_file(std::filesystem::path{PCR_WEB_DIST} / "index.html"));
