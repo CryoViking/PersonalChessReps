@@ -103,3 +103,81 @@ TEST_CASE("from_fen rejects invalid castling rights") {
     REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w -K - 0 1"), std::invalid_argument);
   }
 }
+
+TEST_CASE("from_fen reads the en passant square") {
+  SECTION("none in the starting position") {
+    REQUIRE(Position::from_fen(START_FEN).en_passant() == std::nullopt);
+  }
+  SECTION("rank 3 after a white double step") {
+    REQUIRE(Position::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")
+                .en_passant() == square_at(4, 2));
+  }
+  SECTION("rank 6 after a black double step") {
+    REQUIRE(Position::from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2")
+                .en_passant() == square_at(2, 5));
+  }
+}
+
+TEST_CASE("from_fen rejects an invalid en passant square") {
+  SECTION("a square off rank 3 or 6") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - e4 0 1"), std::invalid_argument);
+  }
+  SECTION("an invalid file") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - z3 0 1"), std::invalid_argument);
+  }
+  SECTION("too short") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - e 0 1"), std::invalid_argument);
+  }
+  SECTION("too long") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - e33 0 1"), std::invalid_argument);
+  }
+}
+
+TEST_CASE("from_fen reads the move counters") {
+  SECTION("the starting values") {
+    const auto position = Position::from_fen(START_FEN);
+    REQUIRE(position.halfmove_clock() == 0);
+    REQUIRE(position.fullmove_number() == 1);
+  }
+  SECTION("mid-game values") {
+    const auto position = Position::from_fen("8/8/8/8/8/8/8/8 w - - 12 34");
+    REQUIRE(position.halfmove_clock() == 12);
+    REQUIRE(position.fullmove_number() == 34);
+  }
+  SECTION("defaults for a four-field EPD") {
+    const auto position = Position::from_fen("8/8/8/8/8/8/8/8 w - -");
+    REQUIRE(position.halfmove_clock() == 0);
+    REQUIRE(position.fullmove_number() == 1);
+  }
+}
+
+TEST_CASE("from_fen rejects invalid move counters") {
+  SECTION("a negative halfmove clock") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - -1 1"), std::invalid_argument);
+  }
+  SECTION("a halfmove clock that isn't a number") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - abc 1"), std::invalid_argument);
+  }
+  SECTION("trailing characters after the number") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - 12abc 1"), std::invalid_argument);
+  }
+  SECTION("a leading plus sign") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - +1 1"), std::invalid_argument);
+  }
+  SECTION("a fullmove number of zero") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 0"), std::invalid_argument);
+  }
+  SECTION("a number too large for an int") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 99999999999"),
+                      std::invalid_argument);
+  }
+}
+
+TEST_CASE("from_fen rejects the wrong number of fields") {
+  SECTION("five fields") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - 0"), std::invalid_argument);
+  }
+  SECTION("seven fields") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 1 x"), std::invalid_argument);
+  }
+}

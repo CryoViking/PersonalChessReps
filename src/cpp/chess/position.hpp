@@ -24,12 +24,18 @@ public:
   [[nodiscard]] std::optional<Piece> piece_at(Square square) const;
   [[nodiscard]] Colour side_to_move() const;
   [[nodiscard]] CastlingRights castling() const;
+  [[nodiscard]] std::optional<Square> en_passant() const;
+  [[nodiscard]] int halfmove_clock() const;
+  [[nodiscard]] int fullmove_number() const;
 
 private:
   Position() = default;
   Board board_{};
   Colour side_to_move_{Colour::White};
   CastlingRights castling_{};
+  std::optional<Square> en_passant_;
+  int halfmove_clock_ = 0;
+  int fullmove_number_ = 1;
 };
 
 } // namespace chess

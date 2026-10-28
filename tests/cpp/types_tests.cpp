@@ -10,6 +10,14 @@ TEST_CASE("square_at numbers the corners a1, h1, a8, h8") {
   STATIC_REQUIRE(square_at(7, 0) == 7);
   STATIC_REQUIRE(square_at(0, 7) == 56);
   STATIC_REQUIRE(square_at(7, 7) == 63);
+  STATIC_REQUIRE(square_from_name("e3") == square_at(4, 2));
+  STATIC_REQUIRE(!square_from_name("i1"));
+  STATIC_REQUIRE(square_from_name("a1") == 0); // corners: the edges of both ranges.
+  STATIC_REQUIRE(square_from_name("h8") == 63);
+  STATIC_REQUIRE(!square_from_name("a9"));  // rank out of range
+  STATIC_REQUIRE(!square_from_name("e"));   // too short
+  STATIC_REQUIRE(!square_from_name("e33")); // too long
+  STATIC_REQUIRE(!square_from_name("E3"));  // uppercase rejected
 }
 
 TEST_CASE("col_of and row_of invert square_at for every square") {
