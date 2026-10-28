@@ -55,7 +55,7 @@ include(CTest)
 fetchcontent_makeavailable(webview nlohmann_json)
 
 # Pure chess logic: no webview, no JSON, so tests can link on its own.
-add_library(pcr_core STATIC src/cpp/chess/position.cpp)
+add_library(pcr_core STATIC src/cpp/chess/position.cpp src/cpp/chess/perft.cpp)
 target_include_directories(pcr_core PUBLIC src/cpp)
 
 add_executable(pcr src/cpp/main.cpp)
@@ -71,7 +71,8 @@ if(BUILD_TESTING)
   fetchcontent_makeavailable(Catch2)
 
   add_executable(pcr_tests tests/cpp/types_tests.cpp tests/cpp/position_tests.cpp
-  tests/cpp/make_move_tests.cpp tests/cpp/attack_tests.cpp tests/cpp/movegen_tests.cpp)
+  tests/cpp/make_move_tests.cpp tests/cpp/attack_tests.cpp tests/cpp/movegen_tests.cpp
+  tests/cpp/perft_tests.cpp)
   target_link_libraries(pcr_tests PRIVATE pcr_core Catch2::Catch2WithMain)
 
   # Catch2 shipa a CMake module that registers each TEST_CASE with CTest.
