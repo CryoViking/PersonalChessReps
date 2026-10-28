@@ -71,3 +71,35 @@ TEST_CASE("from_fen rejects an invalid side to move") {
   REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 x - - 0 1"), std::invalid_argument);
   REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 white - - 0 1"), std::invalid_argument);
 }
+
+TEST_CASE("from_fen reads castling rights") {
+  SECTION("all four in the starting position") {
+    REQUIRE(Position::from_fen(START_FEN).castling() == CastlingRights{.white_kingside = true,
+                                                                       .white_queenside = true,
+                                                                       .black_kingside = true,
+                                                                       .black_queenside = true});
+  }
+  SECTION("a subset") {
+    REQUIRE(Position::from_fen("8/8/8/8/8/8/8/8 w Kq - 0 1").castling() ==
+            CastlingRights{.white_kingside = true, .black_queenside = true});
+  }
+  SECTION("in any order") {
+    REQUIRE(Position::from_fen("8/8/8/8/8/8/8/8 w qK - 0 1").castling() ==
+            CastlingRights{.white_kingside = true, .black_queenside = true});
+  }
+  SECTION("none") {
+    REQUIRE(Position::from_fen("8/8/8/8/8/8/8/8 w - - 0 1").castling() == CastlingRights{});
+  }
+}
+
+TEST_CASE("from_fen rejects invalid castling rights") {
+  SECTION("a repeated letter") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w KK - 0 1"), std::invalid_argument);
+  }
+  SECTION("an invalid character") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w Kx - 0 1"), std::invalid_argument);
+  }
+  SECTION("a dash mixed with letters") {
+    REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 w -K - 0 1"), std::invalid_argument);
+  }
+}

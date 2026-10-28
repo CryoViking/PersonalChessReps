@@ -112,6 +112,39 @@ Colour parse_side(std::string_view field) {
   if(field == "b") return Colour::Black;
   throw std::invalid_argument(std::format("FEN side to move must be 'w' or 'b', got '{}'", field));
 }
+
+// Parses the third FEN field: "-" or any of K, Q, k, q (each at most once).
+CastlingRights parse_castling(std::string_view field) {
+  CastlingRights rights;
+  if(field == "-") return rights;
+  if(field.empty()) throw std::invalid_argument("FEN castling field is empty");
+
+  for(const char c : field) {
+    bool* flag = nullptr;
+    switch(c) {
+      case 'K':
+        flag = &rights.white_kingside;
+        break;
+      case 'k':
+        flag = &rights.black_kingside;
+        break;
+      case 'Q':
+        flag = &rights.white_queenside;
+        break;
+      case 'q':
+        flag = &rights.black_queenside;
+        break;
+      default:
+        throw std::invalid_argument(std::format("invalid castling character '{}' in FEN", c));
+    }
+
+    if(*flag)
+      throw std::invalid_argument(std::format("repeated castling character '{}' in FEN", c));
+    *flag = true;
+  }
+  return rights;
+}
+
 } // namespace
 
 Position Position::from_fen(std::string_view fen) {
@@ -123,6 +156,7 @@ Position Position::from_fen(std::string_view fen) {
   Position position;
   position.board_ = parse_placement(fields[PLACEMENT]);
   position.side_to_move_ = parse_side(fields[SIDE_TO_MOVE]);
+  position.castling_ = parse_castling(fields[CASTLING]);
   return position;
 }
 
@@ -131,5 +165,6 @@ std::optional<Piece> Position::piece_at(Square square) const {
 }
 
 Colour Position::side_to_move() const { return side_to_move_; }
+CastlingRights Position::castling() const { return castling_; }
 
 } // namespace chess
