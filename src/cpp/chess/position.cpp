@@ -26,6 +26,13 @@ struct Offset {
   int dr;
 };
 
+struct CastlingSide {
+  int rook_col;                    // Where the rook must be
+  std::span<const int> empty_cols; // squares between king and rook
+  std::span<const int> safe_cols;  // squares the king stands on, crosses or lands on
+  int king_to_col;
+};
+
 constexpr std::size_t FEN_FIELD_COUNT = 6;
 constexpr std::size_t EPD_FIELD_COUNT = 4;
 
@@ -53,6 +60,39 @@ constexpr int KINGSIDE_ROOK_TO_COL = 5;
 constexpr int QUEENSIDE_ROOK_FROM_COL = 0;
 constexpr int QUEENSIDE_ROOK_TO_COL = 3;
 
+constexpr std::array<int, 2> KINGSIDE_EMPTY_COLS{
+    5,
+    6,
+}; // f, g
+constexpr std::array<int, 3> KINGSIDE_SAFE_COLS{
+    4,
+    5,
+    6,
+}; // e, f, g
+constexpr std::array<int, 3> QUEENSIDE_EMPTY_COLS{
+    3,
+    2,
+    1,
+}; // d, c, b
+constexpr std::array<int, 3> QUEENSIDE_SAFE_COLS{
+    4,
+    3,
+    2,
+}; // e, d, c (not b: the king never crosses it)
+
+constexpr CastlingSide KINGSIDE{
+    .rook_col = 7,
+    .empty_cols = KINGSIDE_EMPTY_COLS,
+    .safe_cols = KINGSIDE_SAFE_COLS,
+    .king_to_col = 6,
+};
+constexpr CastlingSide QUEENSIDE{
+    .rook_col = 0,
+    .empty_cols = QUEENSIDE_EMPTY_COLS,
+    .safe_cols = QUEENSIDE_SAFE_COLS,
+    .king_to_col = 2,
+};
+
 constexpr int CASTLING_KING_STEP = 2; // columns the king moves when castling
 constexpr int DOUBLE_PUSH_STEP = 2;   // rows a pawn moves on its first double step
 
@@ -60,6 +100,10 @@ constexpr int WHITE_PAWN_START_ROW = 1; // rank 2
 constexpr int BLACK_PAWN_START_ROW = 6; // rank 7
 constexpr int WHITE_PROMOTION_ROW = 7;  // rank 8
 constexpr int BLACK_PROMOTION_ROW = 0;  // rank 9
+
+constexpr int KING_HOME_COL = 4; // e-file
+constexpr int WHITE_HOME_ROW = 0;
+constexpr int BLACK_HOME_ROW = 7;
 
 constexpr std::array<PieceType, 4> PROMOTION_TYPES{
     PieceType::Queen,
@@ -215,6 +259,44 @@ void add_pawn_moves(const Position& position, Square from, Colour us, std::vecto
                     moves);
     }
   }
+}
+
+// Adds the castling move for one side if every condition holds. The right itself is
+// checked by the caller.
+void add_castling_move(const Position& position, const CastlingSide& side,
+                       std::vector<Move>& moves) {
+  const Colour us = position.side_to_move();
+  const Colour them = opposite(us);
+  const int row = us == Colour::White ? WHITE_HOME_ROW : BLACK_HOME_ROW;
+  const Square king_from = square_at(KING_HOME_COL, row);
+
+  // Guard against FENs whose rights don't match the board.
+  if(position.piece_at(king_from) != Piece{.colour = us, .type = PieceType::King}) return;
+  if(position.piece_at(square_at(side.rook_col, row)) !=
+     Piece{.colour = us, .type = PieceType::Rook}) {
+    return;
+  }
+
+  const auto occupied = [&](int col) { return position.piece_at(square_at(col, row)).has_value(); };
+  const auto attacked = [&](int col) {
+    return position.is_square_attacked(square_at(col, row), them);
+  };
+  if(std::ranges::any_of(side.empty_cols, occupied)) return;
+  if(std::ranges::any_of(side.safe_cols, attacked)) return;
+
+  moves.push_back(
+      Move{.from = king_from, .to = square_at(side.king_to_col, row), .promotion = std::nullopt});
+}
+
+void add_castling_moves(const Position& position, std::vector<Move>& moves) {
+  const CastlingRights rights = position.castling();
+  const bool white = position.side_to_move() == Colour::White;
+
+  if(white ? rights.white_kingside : rights.black_kingside)
+    add_castling_move(position, KINGSIDE, moves);
+
+  if(white ? rights.white_queenside : rights.black_queenside)
+    add_castling_move(position, QUEENSIDE, moves);
 }
 
 std::size_t index_of(Square square) { return static_cast<std::size_t>(square); }
@@ -580,10 +662,11 @@ std::vector<Move> Position::legal_moves() const {
         break;
       case PieceType::King:
         add_leaper_moves(*this, from, KING_OFFSETS, side_to_move_, moves);
+        add_castling_moves(*this, moves);
         break;
     }
   }
-  // Keep only moves that don't leave out king attacked. That one rule covers pins,
+  // Keep only moves that don't leave our king attacked. That one rule covers pins,
   // moving into check and failing to get out of check.
   std::erase_if(moves, [&](const Move& move) {
     const Position next = make_move(move);

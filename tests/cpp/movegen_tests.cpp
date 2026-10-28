@@ -125,3 +125,46 @@ TEST_CASE("legal_moves: moves that leave the king attacked are removed") {
     REQUIRE(count("8/8/8/8/8/8/8/R7 w - - 0 1") == 14);
   }
 }
+
+TEST_CASE("legal_moves: castling") {
+  // True if the king's two-square castling move is generated.
+  const auto can_castle = [](std::string_view fen, std::string_view king, std::string_view to) {
+    return contains(Position::from_fen(fen).legal_moves(), move(king, to));
+  };
+
+  SECTION("both sides when nothing is in the way") {
+    REQUIRE(can_castle("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", "e1", "g1"));
+    REQUIRE(can_castle("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", "e1", "c1"));
+  }
+  SECTION("Black castles on its own back rank") {
+    REQUIRE(can_castle("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1", "e8", "g8"));
+    REQUIRE(can_castle("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1", "e8", "c8"));
+  }
+  SECTION("not without the right") {
+    REQUIRE_FALSE(can_castle("k7/8/8/8/8/8/8/R3K2R w - - 0 1", "e1", "g1"));
+    REQUIRE_FALSE(can_castle("k7/8/8/8/8/8/8/R3K2R w - - 0 1", "e1", "c1"));
+  }
+  SECTION("not out of check") {
+    REQUIRE_FALSE(can_castle("k3r3/8/8/8/8/8/8/R3K2R w KQ - 0 1", "e1", "g1"));
+    REQUIRE_FALSE(can_castle("k3r3/8/8/8/8/8/8/R3K2R w KQ - 0 1", "e1", "c1"));
+  }
+  SECTION("not through an attacked square") {
+    REQUIRE_FALSE(can_castle("k4r2/8/8/8/8/8/8/R3K2R w KQ - 0 1", "e1", "g1")); // f1
+    REQUIRE_FALSE(can_castle("k2r4/8/8/8/8/8/8/R3K2R w KQ - 0 1", "e1", "c1")); // d1
+  }
+  SECTION("not into check") {
+    REQUIRE_FALSE(can_castle("k5r1/8/8/8/8/8/8/R3K2R w KQ - 0 1", "e1", "g1")); // g1
+  }
+  SECTION("queenside is allowed when only b1 is attacked") {
+    // The king never crosses b1, so an attack there doesn't matter; only that it's empty.
+    REQUIRE(can_castle("kr6/8/8/8/8/8/8/R3K2R w KQ - 0 1", "e1", "c1"));
+  }
+  SECTION("not through a piece") {
+    REQUIRE_FALSE(can_castle("k7/8/8/8/8/8/8/RN2K2R w KQ - 0 1", "e1", "c1")); // b1 blocked
+    REQUIRE(can_castle("k7/8/8/8/8/8/8/RN2K2R w KQ - 0 1", "e1", "g1"));
+  }
+  SECTION("not when the rights don't match the board") {
+    // The FEN claims queenside rights, but there is no rook on a1.
+    REQUIRE_FALSE(can_castle("k7/8/8/8/8/8/8/4K2R w KQ - 0 1", "e1", "c1"));
+  }
+}
