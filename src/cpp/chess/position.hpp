@@ -13,11 +13,12 @@ public:
   static Position from_fen(std::string_view fen);
 
   [[nodiscard]] std::optional<Piece> piece_at(Square square) const;
+  [[nodiscard]] Colour side_to_move() const;
 
 private:
   Position() = default;
-
   Board board_{};
+  Colour side_to_move_{Colour::White};
 };
 
 } // namespace chess

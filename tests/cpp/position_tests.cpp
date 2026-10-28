@@ -60,3 +60,14 @@ TEST_CASE("from_fen rejects malformed placements") {
     REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8/ w - - 0 1"), std::invalid_argument);
   }
 }
+
+TEST_CASE("from_fen reads the side to move") {
+  REQUIRE(Position::from_fen(START_FEN).side_to_move() == Colour::White);
+  REQUIRE(Position::from_fen("rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1")
+              .side_to_move() == Colour::Black);
+}
+
+TEST_CASE("from_fen rejects an invalid side to move") {
+  REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 x - - 0 1"), std::invalid_argument);
+  REQUIRE_THROWS_AS(Position::from_fen("8/8/8/8/8/8/8/8 white - - 0 1"), std::invalid_argument);
+}

@@ -106,6 +106,12 @@ Board parse_placement(std::string_view placement) {
   return board;
 }
 
+// Parses the second FEN field: "w" or "b"
+Colour parse_side(std::string_view field) {
+  if(field == "w") return Colour::White;
+  if(field == "b") return Colour::Black;
+  throw std::invalid_argument(std::format("FEN side to move must be 'w' or 'b', got '{}'", field));
+}
 } // namespace
 
 Position Position::from_fen(std::string_view fen) {
@@ -116,11 +122,14 @@ Position Position::from_fen(std::string_view fen) {
   }
   Position position;
   position.board_ = parse_placement(fields[PLACEMENT]);
+  position.side_to_move_ = parse_side(fields[SIDE_TO_MOVE]);
   return position;
 }
 
 std::optional<Piece> Position::piece_at(Square square) const {
   return board_.at(static_cast<std::size_t>(square));
 }
+
+Colour Position::side_to_move() const { return side_to_move_; }
 
 } // namespace chess
