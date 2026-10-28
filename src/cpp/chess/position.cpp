@@ -1,10 +1,13 @@
 #include "chess/position.hpp"
 
+#include <algorithm>
+#include <array>
 #include <charconv>
 #include <cstddef>
 #include <cstdlib>
 #include <format>
 #include <optional>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -16,6 +19,11 @@
 namespace chess {
 
 namespace {
+
+struct Offset {
+  int dc;
+  int dr;
+};
 
 constexpr std::size_t FEN_FIELD_COUNT = 6;
 constexpr std::size_t EPD_FIELD_COUNT = 4;
@@ -47,12 +55,91 @@ constexpr int QUEENSIDE_ROOK_TO_COL = 3;
 constexpr int CASTLING_KING_STEP = 2; // columns the king moves when castling
 constexpr int DOUBLE_PUSH_STEP = 2;   // rows a pawn moves on its first double step
 
+constexpr std::array<Offset, 8> KNIGHT_OFFSETS{
+    {
+        {.dc = 1, .dr = 2},
+        {.dc = 2, .dr = 1},
+        {.dc = 2, .dr = -1},
+        {.dc = 1, .dr = -2},
+        {.dc = -1, .dr = -2},
+        {.dc = -2, .dr = -1},
+        {.dc = -2, .dr = 1},
+        {.dc = -1, .dr = 2},
+    },
+};
+
+constexpr std::array<Offset, 8> KING_OFFSETS{
+    {
+        {.dc = -1, .dr = -1},
+        {.dc = 0, .dr = -1},
+        {.dc = 1, .dr = -1},
+        {.dc = -1, .dr = 0},
+        {.dc = 1, .dr = 0},
+        {.dc = -1, .dr = 1},
+        {.dc = 0, .dr = 1},
+        {.dc = 1, .dr = 1},
+    },
+};
+
+constexpr std::array<Offset, 4> DIAGONALS{
+    {
+        {.dc = 1, .dr = 1},
+        {.dc = 1, .dr = -1},
+        {.dc = -1, .dr = -1},
+        {.dc = -1, .dr = 1},
+    },
+};
+
+constexpr std::array<Offset, 4> STRAIGHTS{
+    {
+        {.dc = 1, .dr = 0},
+        {.dc = -1, .dr = 0},
+        {.dc = 0, .dr = 1},
+        {.dc = 0, .dr = -1},
+    },
+};
+
+// One step from `square`, or nullopt if that would leave the board.
+std::optional<Square> offset_square(Square square, Offset offset) {
+  const int col = col_of(square) + offset.dc;
+  const int row = row_of(square) + offset.dr;
+  if(col < 0 || col >= BOARD_SIZE || row < 0 || row >= BOARD_SIZE) return std::nullopt;
+  return square_at(col, row);
+}
+
+// Does a piece equal to `attacker` sit one offset away from `square`?
+bool leaper_attacks(const Position& position, Square square, std::span<const Offset> offsets,
+                    Piece attacker) {
+  return std::ranges::any_of(offsets, [&](Offset offset) {
+    const auto target = offset_square(square, offset);
+    return target && position.piece_at(*target) == attacker;
+  });
+}
+
+// Walks each direction until the first piece; true if it's `by`'s `type` or queen.
+bool slider_attacks(const Position& position, Square square, std::span<const Offset> directions,
+                    Colour by, PieceType type) {
+  for(const Offset direction : directions) {
+    auto current = offset_square(square, direction);
+    while(current) {
+      if(const auto piece = position.piece_at(*current)) {
+        if(piece->colour == by && (piece->type == type || piece->type == PieceType::Queen)) {
+          return true;
+        }
+        break;
+      }
+      current = offset_square(*current, direction);
+    }
+  }
+  return false;
+}
+
 std::size_t index_of(Square square) { return static_cast<std::size_t>(square); }
 
 void clear_corner_right(CastlingRights& rights, Square square) {
   if(square == WHITE_KINGSIDE_ROOK) rights.white_kingside = false;
   if(square == WHITE_QUEENSIDE_ROOK) rights.white_queenside = false;
-  if(square == BLACK_KINGSIDE_ROOK) rights.white_kingside = false;
+  if(square == BLACK_KINGSIDE_ROOK) rights.black_kingside = false;
   if(square == BLACK_QUEENSIDE_ROOK) rights.black_queenside = false;
 }
 
@@ -361,6 +448,28 @@ Position Position::make_move(const Move& move) const {
   if(side_to_move_ == Colour::Black) ++next.fullmove_number_;
   next.side_to_move_ = side_to_move_ == Colour::White ? Colour::Black : Colour::White;
   return next;
+}
+
+bool Position::is_square_attacked(Square square, Colour by) const {
+  if(leaper_attacks(*this, square, KNIGHT_OFFSETS, Piece{.colour = by, .type = PieceType::Knight}))
+    return true;
+  if(leaper_attacks(*this, square, KING_OFFSETS, Piece{.colour = by, .type = PieceType::King}))
+    return true;
+
+  // Look back the way an attacking a pawn would have come: White pawns attack upwards,
+  // so a White attacker sites one row below the square.
+  const int pawn_dr = by == Colour::White ? -1 : 1;
+  const std::array<Offset, 2> pawn_offsets{
+      {
+          {.dc = -1, .dr = pawn_dr},
+          {.dc = 1, .dr = pawn_dr},
+      },
+  };
+  if(leaper_attacks(*this, square, pawn_offsets, Piece{.colour = by, .type = PieceType::Pawn}))
+    return true;
+
+  return slider_attacks(*this, square, DIAGONALS, by, PieceType::Bishop) ||
+         slider_attacks(*this, square, STRAIGHTS, by, PieceType::Rook);
 }
 
 } // namespace chess

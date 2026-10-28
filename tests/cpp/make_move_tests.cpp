@@ -74,6 +74,10 @@ TEST_CASE("make_move handles special captures and promotion") {
     REQUIRE(after("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", move("a1", "a8")) ==
             "R3k2r/8/8/8/8/8/8/4K2R b Kk - 0 1");
   }
+  SECTION("capturing on h8 removes Black's kingside right, not White's queenside") {
+    REQUIRE(after("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1", move("h1", "h8")) ==
+            "r3k2R/8/8/8/8/8/8/R3K3 b Qq - 0 1");
+  }
 }
 
 TEST_CASE("make_move rejects a move from an empty square") {

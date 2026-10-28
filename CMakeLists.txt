@@ -71,7 +71,7 @@ if(BUILD_TESTING)
   fetchcontent_makeavailable(Catch2)
 
   add_executable(pcr_tests tests/cpp/types_tests.cpp tests/cpp/position_tests.cpp
-  tests/cpp/make_move_tests.cpp)
+  tests/cpp/make_move_tests.cpp tests/cpp/attack_tests.cpp)
   target_link_libraries(pcr_tests PRIVATE pcr_core Catch2::Catch2WithMain)
 
   # Catch2 shipa a CMake module that registers each TEST_CASE with CTest.

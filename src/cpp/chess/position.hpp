@@ -30,6 +30,7 @@ public:
   [[nodiscard]] int fullmove_number() const;
   [[nodiscard]] std::string to_fen() const;
   [[nodiscard]] Position make_move(const Move& move) const;
+  [[nodiscard]] bool is_square_attacked(Square square, Colour by) const;
 
 private:
   Position() = default;
