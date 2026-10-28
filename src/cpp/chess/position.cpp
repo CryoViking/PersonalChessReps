@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <format>
+#include <initializer_list>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -54,6 +55,18 @@ constexpr int QUEENSIDE_ROOK_TO_COL = 3;
 
 constexpr int CASTLING_KING_STEP = 2; // columns the king moves when castling
 constexpr int DOUBLE_PUSH_STEP = 2;   // rows a pawn moves on its first double step
+
+constexpr int WHITE_PAWN_START_ROW = 1; // rank 2
+constexpr int BLACK_PAWN_START_ROW = 6; // rank 7
+constexpr int WHITE_PROMOTION_ROW = 7;  // rank 8
+constexpr int BLACK_PROMOTION_ROW = 0;  // rank 9
+
+constexpr std::array<PieceType, 4> PROMOTION_TYPES{
+    PieceType::Queen,
+    PieceType::Rook,
+    PieceType::Bishop,
+    PieceType::Knight,
+};
 
 constexpr std::array<Offset, 8> KNIGHT_OFFSETS{
     {
@@ -134,6 +147,76 @@ bool slider_attacks(const Position& position, Square square, std::span<const Off
   return false;
 }
 
+void add_leaper_moves(const Position& position, Square from, std::span<const Offset> offsets,
+                      Colour us, std::vector<Move>& moves) {
+  for(const Offset offset : offsets) {
+    const auto target = offset_square(from, offset);
+    if(!target) continue;
+    const auto occupant = position.piece_at(*target);
+    if(occupant && occupant->colour == us) continue;
+    moves.push_back(Move{.from = from, .to = *target, .promotion = std::nullopt});
+  }
+}
+
+// Walks each direction, adding every empty square and the first enemy piece.
+// Stops at the board edge of the first piece either way.
+void add_slider_moves(const Position& position, Square from, std::span<const Offset> directions,
+                      Colour us, std::vector<Move>& moves) {
+  for(const Offset direction : directions) {
+    auto current = offset_square(from, direction);
+    while(current) {
+      const auto occupant = position.piece_at(*current);
+      if(occupant && occupant->colour == us) break;
+
+      moves.push_back(Move{.from = from, .to = *current, .promotion = std::nullopt});
+      if(occupant) break;
+      current = offset_square(*current, direction);
+    }
+  }
+}
+
+// Adds `move`, or one move per promotion piece if it lands on the promotion row.
+void add_pawn_move(const Move& move, int promotion_row, std::vector<Move>& moves) {
+  if(row_of(move.to) != promotion_row) {
+    moves.push_back(move);
+    return;
+  }
+  for(const PieceType type : PROMOTION_TYPES) {
+    moves.push_back(Move{.from = move.from, .to = move.to, .promotion = type});
+  }
+}
+
+// Pushes (one or two squares straight ahead onot empty squares) and diagonal captures
+// (onto) an enemy piece or the en passant square).
+void add_pawn_moves(const Position& position, Square from, Colour us, std::vector<Move>& moves) {
+  const bool white = us == Colour::White;
+  const int forward = white ? 1 : -1;
+  const int start_row = white ? WHITE_PAWN_START_ROW : BLACK_PAWN_START_ROW;
+  const int promotion_row = white ? WHITE_PROMOTION_ROW : BLACK_PROMOTION_ROW;
+
+  const auto one_step = offset_square(from, Offset{.dc = 0, .dr = forward});
+  if(one_step && !position.piece_at(*one_step)) {
+    add_pawn_move(Move{.from = from, .to = *one_step, .promotion = std::nullopt}, promotion_row,
+                  moves);
+
+    const auto two_steps = offset_square(*one_step, Offset{.dc = 0, .dr = forward});
+    if(row_of(from) == start_row && two_steps && !position.piece_at(*two_steps))
+      moves.push_back(Move{.from = from, .to = *two_steps, .promotion = std::nullopt});
+  }
+
+  for(const int dc : {-1, 1}) {
+    const auto target = offset_square(from, Offset{.dc = dc, .dr = forward});
+    if(!target) continue;
+
+    const auto occupant = position.piece_at(*target);
+    const bool captures_enemy = occupant && occupant->colour != us;
+    if(captures_enemy || position.en_passant() == *target) {
+      add_pawn_move(Move{.from = from, .to = *target, .promotion = std::nullopt}, promotion_row,
+                    moves);
+    }
+  }
+}
+
 std::size_t index_of(Square square) { return static_cast<std::size_t>(square); }
 
 void clear_corner_right(CastlingRights& rights, Square square) {
@@ -181,7 +264,7 @@ std::optional<Piece> piece_from_fen_char(char c) {
 char fen_char(Piece piece) {
   char letter = 'p';
   switch(piece.type) {
-    case chess::PieceType::Pawn:
+    case PieceType::Pawn:
       letter = 'p';
       break;
     case PieceType::Knight:
@@ -446,7 +529,7 @@ Position Position::make_move(const Move& move) const {
 
   next.halfmove_clock_ = (is_pawn || is_capture) ? 0 : halfmove_clock_ + 1;
   if(side_to_move_ == Colour::Black) ++next.fullmove_number_;
-  next.side_to_move_ = side_to_move_ == Colour::White ? Colour::Black : Colour::White;
+  next.side_to_move_ = opposite(side_to_move_);
   return next;
 }
 
@@ -470,6 +553,50 @@ bool Position::is_square_attacked(Square square, Colour by) const {
 
   return slider_attacks(*this, square, DIAGONALS, by, PieceType::Bishop) ||
          slider_attacks(*this, square, STRAIGHTS, by, PieceType::Rook);
+}
+
+std::vector<Move> Position::legal_moves() const {
+  std::vector<Move> moves;
+  for(Square from = 0; from < SQUARE_COUNT; ++from) {
+    const auto piece = piece_at(from);
+    if(!piece || piece->colour != side_to_move_) continue;
+
+    switch(piece->type) {
+      case PieceType::Pawn:
+        add_pawn_moves(*this, from, side_to_move_, moves);
+        break;
+      case PieceType::Knight:
+        add_leaper_moves(*this, from, KNIGHT_OFFSETS, side_to_move_, moves);
+        break;
+      case PieceType::Bishop:
+        add_slider_moves(*this, from, DIAGONALS, side_to_move_, moves);
+        break;
+      case PieceType::Rook:
+        add_slider_moves(*this, from, STRAIGHTS, side_to_move_, moves);
+        break;
+      case PieceType::Queen:
+        add_slider_moves(*this, from, DIAGONALS, side_to_move_, moves);
+        add_slider_moves(*this, from, STRAIGHTS, side_to_move_, moves);
+        break;
+      case PieceType::King:
+        add_leaper_moves(*this, from, KING_OFFSETS, side_to_move_, moves);
+        break;
+      default:
+        break;
+    }
+  }
+  return moves;
+}
+
+std::optional<Square> Position::king_square(Colour colour) const {
+  for(Square square = 0; square < SQUARE_COUNT; ++square)
+    if(piece_at(square) == Piece{.colour = colour, .type = PieceType::King}) return square;
+  return std::nullopt;
+}
+
+bool Position::in_check() const {
+  const auto king = king_square(side_to_move_);
+  return king && is_square_attacked(*king, opposite(side_to_move_));
 }
 
 } // namespace chess

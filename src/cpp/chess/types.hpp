@@ -35,6 +35,10 @@ constexpr std::string square_name(Square square) {
 }
 
 enum class Colour : std::uint8_t { White, Black };
+constexpr Colour opposite(Colour colour) {
+  return colour == Colour::White ? Colour::Black : Colour::White;
+}
+
 enum class PieceType : std::uint8_t { Pawn, Knight, Bishop, Rook, Queen, King };
 
 struct Piece {

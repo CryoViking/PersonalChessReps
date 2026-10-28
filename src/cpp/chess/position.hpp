@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "chess/types.hpp"
 
@@ -31,6 +32,8 @@ public:
   [[nodiscard]] std::string to_fen() const;
   [[nodiscard]] Position make_move(const Move& move) const;
   [[nodiscard]] bool is_square_attacked(Square square, Colour by) const;
+  [[nodiscard]] std::vector<Move> legal_moves() const;
+  [[nodiscard]] bool in_check() const; // is the side to move in check?
 
 private:
   Position() = default;
@@ -40,6 +43,9 @@ private:
   std::optional<Square> en_passant_;
   int halfmove_clock_ = 0;
   int fullmove_number_ = 1;
+
+  // The square holding `colour`'s king, or nullopt if there isn't one (possible in test positions).
+  [[nodiscard]] std::optional<Square> king_square(Colour colour) const;
 };
 
 } // namespace chess
