@@ -8,8 +8,19 @@ import {
   renderPieces,
   renderSquares,
 } from "./board";
-import { applyMove, type Board, isWhite, type Move, type Square, START_BOARD } from "./chess";
+import type { PositionState } from "./bridge";
+import {
+  type Board,
+  boardFromFen,
+  isWhite,
+  type Move,
+  type Piece,
+  type Square,
+  START_FEN,
+  squareName,
+} from "./chess";
 import { pointerToBoard, squareFromPointer } from "./input";
+import { getPosition, playMove } from "./rules";
 
 const LEFT_CLICK = 0;
 const RIGHT_CLICK = 2;
@@ -20,9 +31,13 @@ function requireElement<T extends Element>(selector: string) {
   return element;
 }
 
-// Board state
-let position: Board = START_BOARD;
-let lastMove: Move | null = null;
+// Game state: every position reached so far, and which one is on the board. Each entry
+// keeps the move that led to it, for the last-move highlight.
+type HistoryEntry = { state: PositionState; move: Move | null };
+
+const history: HistoryEntry[] = [];
+let current = 0;
+let busy = false; // true while a move is waiting for C++
 
 const markedSquares = new Set<Square>();
 const arrows: Arrow[] = [];
@@ -39,18 +54,58 @@ const dragLayer = requireElement<HTMLElement>(".board-drag");
 const board = requireElement<HTMLElement>("#board");
 
 renderSquares(squaresLayer);
+history.push({ state: await getPosition(START_FEN), move: null });
 redraw();
 
-// No legality yet; just stops a piece capturing its own side.
-function canMoveTo(from: Square, to: Square): boolean {
-  const mover = position[from];
-  const target = position[to];
-  return !(mover && target && isWhite(mover) === isWhite(target));
+function currentEntry(): HistoryEntry {
+  const entry = history[current];
+  if (entry === undefined) throw new Error("no position loaded");
+  return entry;
 }
 
-function makeMove(from: Square, to: Square): void {
-  position = applyMove(position, from, to);
-  lastMove = { from, to };
+function currentBoard(): Board {
+  const fen = currentEntry().state.fen;
+  return boardFromFen(fen.slice(0, fen.indexOf(" ")));
+}
+
+// Can this piece be picked up? Only the side to move's pieces can.
+function isMovable(piece: Piece): boolean {
+  const whiteToMove = currentEntry().state.fen.split(" ")[1] === "w";
+  return isWhite(piece) === whiteToMove;
+}
+
+// The UCI text for from -> to if it's legal, else null. Promotions become a queen for
+// now; a picker comes later.
+function legalUci(from: Square, to: Square): string | null {
+  const uci = squareName(from) + squareName(to);
+  const legal = currentEntry().state.legalMoves;
+  if (legal.includes(uci)) return uci;
+  if (legal.includes(`${uci}q`)) return `${uci}q`;
+  return null;
+}
+
+function canMoveTo(from: Square, to: Square): boolean {
+  return legalUci(from, to) !== null;
+}
+
+// Asks C++ to play the move, then shows the new position. Anything after the current
+// position is dropped first, so playing from an earlier position starts a new line.
+async function makeMove(from: Square, to: Square): Promise<void> {
+  const uci = legalUci(from, to);
+  if (uci === null || busy) return;
+
+  busy = true;
+  try {
+    const state = await playMove(currentEntry().state.fen, uci);
+    history.splice(current + 1);
+    history.push({ state, move: { from, to } });
+    current = history.length - 1;
+  } catch (error) {
+    console.error(error);
+  } finally {
+    busy = false;
+    redraw();
+  }
 }
 
 function toggleMark(square: Square): void {
@@ -70,8 +125,8 @@ function redraw(): void {
     shown = [...arrows, { from: rightDragStart, to: rightDragCurrent }];
   }
 
-  renderPieces(piecesLayer, position, leftDrag?.from ?? null);
-  renderHighlights(highlightsLayer, selectedSquare, markedSquares, lastMove);
+  renderPieces(piecesLayer, currentBoard(), leftDrag?.from ?? null);
+  renderHighlights(highlightsLayer, selectedSquare, markedSquares, currentEntry().move);
   renderArrows(arrowsLayer, shown);
 }
 
@@ -81,7 +136,7 @@ board.addEventListener("pointerdown", (event) => {
     markedSquares.clear();
     arrows.length = 0;
 
-    const piece = square === null ? undefined : position[square];
+    const piece = square === null ? undefined : currentBoard()[square];
 
     if (square === null) selectedSquare = null;
     else if (
@@ -89,9 +144,9 @@ board.addEventListener("pointerdown", (event) => {
       square !== selectedSquare &&
       canMoveTo(selectedSquare, square)
     ) {
-      makeMove(selectedSquare, square);
+      void makeMove(selectedSquare, square);
       selectedSquare = null;
-    } else if (piece) {
+    } else if (piece && isMovable(piece)) {
       leftDrag = { from: square, wasSelected: square === selectedSquare };
       selectedSquare = square;
       board.setPointerCapture(event.pointerId);
@@ -123,7 +178,7 @@ board.addEventListener("pointerup", (event) => {
     const end = squareFromPointer(board, event);
 
     if (end !== null && end !== leftDrag.from && canMoveTo(leftDrag.from, end)) {
-      makeMove(leftDrag.from, end);
+      void makeMove(leftDrag.from, end);
     }
 
     // Only a first click (released where it was pressed) keeps the piece selected.

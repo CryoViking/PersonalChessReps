@@ -1,9 +1,10 @@
-export {};
+export type Reply<T> = { ok: true; value: T } | { ok: false; error: string };
 
-type PingReply = { ok: true; value: string } | { ok: false; error: string };
+export type PositionState = { fen: string; legalMoves: string[]; inCheck: boolean };
 
 declare global {
   interface Window {
-    ping(message: string): Promise<PingReply>;
+    position(fen: string): Promise<Reply<PositionState>>;
+    play(fen: string, uci: string): Promise<Reply<PositionState>>;
   }
 }
