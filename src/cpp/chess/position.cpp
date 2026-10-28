@@ -581,10 +581,15 @@ std::vector<Move> Position::legal_moves() const {
       case PieceType::King:
         add_leaper_moves(*this, from, KING_OFFSETS, side_to_move_, moves);
         break;
-      default:
-        break;
     }
   }
+  // Keep only moves that don't leave out king attacked. That one rule covers pins,
+  // moving into check and failing to get out of check.
+  std::erase_if(moves, [&](const Move& move) {
+    const Position next = make_move(move);
+    const auto king = next.king_square(side_to_move_);
+    return king && next.is_square_attacked(*king, opposite(side_to_move_));
+  });
   return moves;
 }
 

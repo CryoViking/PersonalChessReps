@@ -94,3 +94,34 @@ TEST_CASE("legal_moves: sliders stop at the first piece") {
     REQUIRE_FALSE(contains(moves, move("a1", "a5")));
   }
 }
+
+TEST_CASE("legal_moves: moves that leave the king attacked are removed") {
+  const auto count = [](std::string_view fen) {
+    return Position::from_fen(fen).legal_moves().size();
+  };
+
+  SECTION("a pinned rook can only move along the pin") {
+    // White rook e2 is pinned by the rook on e7: 5 moves up the e-file (including Rxe7),
+    // none sideways, plus 4 king moves.
+    const auto moves = Position::from_fen("4k3/4r3/8/8/8/8/4R3/4K3 w - - 0 1").legal_moves();
+    REQUIRE(moves.size() == 9);
+    REQUIRE(contains(moves, move("e2", "e7")));
+    REQUIRE_FALSE(contains(moves, move("e2", "d2")));
+  }
+  SECTION("in check, only escapes are allowed") {
+    // Rook a1 checks along the first rank: only d2, e2 and f2 get out of it.
+    REQUIRE(count("4k3/8/8/8/8/8/8/r3K3 w - - 0 1") == 3);
+  }
+  SECTION("the king may capture an unprotected attacker") {
+    const auto moves = Position::from_fen("4k3/8/8/8/8/8/3r4/4K3 w - - 0 1").legal_moves();
+    REQUIRE(moves.size() == 2);
+    REQUIRE(contains(moves, move("e1", "d2")));
+  }
+  SECTION("but not a protected one") {
+    // The queen on d3 guards d2 and covers f1: no legal moves at all.
+    REQUIRE(count("4k3/8/8/8/8/3q4/3r4/4K3 w - - 0 1") == 0);
+  }
+  SECTION("with no king on the board, nothing is filtered") {
+    REQUIRE(count("8/8/8/8/8/8/8/R7 w - - 0 1") == 14);
+  }
+}
