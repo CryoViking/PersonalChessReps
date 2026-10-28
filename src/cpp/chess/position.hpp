@@ -29,6 +29,7 @@ public:
   [[nodiscard]] int halfmove_clock() const;
   [[nodiscard]] int fullmove_number() const;
   [[nodiscard]] std::string to_fen() const;
+  [[nodiscard]] Position make_move(const Move& move) const;
 
 private:
   Position() = default;

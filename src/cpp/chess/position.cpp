@@ -2,6 +2,7 @@
 
 #include <charconv>
 #include <cstddef>
+#include <cstdlib>
 #include <format>
 #include <optional>
 #include <stdexcept>
@@ -30,6 +31,30 @@ constexpr int WHITE_EN_PASSANT_ROW = 2;
 constexpr int BLACK_EN_PASSANT_ROW = 5;
 constexpr int MIN_HALFMOVE_CLOCK = 0;
 constexpr int MIN_FULLMOVE_NUMBER = 1;
+
+// Rook home squares: anything moving from or to one of these loses that castling again.
+constexpr Square WHITE_KINGSIDE_ROOK = square_at(7, 0);  // h1
+constexpr Square WHITE_QUEENSIDE_ROOK = square_at(0, 0); // a1
+constexpr Square BLACK_KINGSIDE_ROOK = square_at(7, 7);  // h8
+constexpr Square BLACK_QUEENSIDE_ROOK = square_at(0, 7); // a8
+
+// Where the rook goes when castling: h-file to f-file, or a-file to d-file.
+constexpr int KINGSIDE_ROOK_FROM_COL = 7;
+constexpr int KINGSIDE_ROOK_TO_COL = 5;
+constexpr int QUEENSIDE_ROOK_FROM_COL = 0;
+constexpr int QUEENSIDE_ROOK_TO_COL = 3;
+
+constexpr int CASTLING_KING_STEP = 2; // columns the king moves when castling
+constexpr int DOUBLE_PUSH_STEP = 2;   // rows a pawn moves on its first double step
+
+std::size_t index_of(Square square) { return static_cast<std::size_t>(square); }
+
+void clear_corner_right(CastlingRights& rights, Square square) {
+  if(square == WHITE_KINGSIDE_ROOK) rights.white_kingside = false;
+  if(square == WHITE_QUEENSIDE_ROOK) rights.white_queenside = false;
+  if(square == BLACK_KINGSIDE_ROOK) rights.white_kingside = false;
+  if(square == BLACK_QUEENSIDE_ROOK) rights.black_queenside = false;
+}
 
 std::optional<PieceType> type_from_fen_char(char c) {
   switch(c) {
@@ -283,5 +308,59 @@ CastlingRights Position::castling() const { return castling_; }
 std::optional<Square> Position::en_passant() const { return en_passant_; }
 int Position::halfmove_clock() const { return halfmove_clock_; }
 int Position::fullmove_number() const { return fullmove_number_; }
+
+Position Position::make_move(const Move& move) const {
+  const auto moving = board_.at(index_of(move.from));
+  if(!moving)
+    throw std::invalid_argument(std::format("no piece on {} to move", square_name(move.from)));
+
+  const Piece piece = *moving;
+  const bool is_pawn = piece.type == PieceType::Pawn;
+  const bool is_capture = board_.at(index_of(move.to)).has_value();
+
+  Position next = *this;
+
+  // En passant: the captured pawn is beside the destination, not on it.
+  if(is_pawn && en_passant_ == move.to)
+    next.board_.at(index_of(square_at(col_of(move.to), row_of(move.from)))) = std::nullopt;
+
+  next.board_.at(index_of(move.to)) =
+      move.promotion ? Piece{.colour = piece.colour, .type = *move.promotion} : piece;
+  next.board_.at(index_of(move.from)) = std::nullopt;
+
+  // Castling: the king moves two columns, and the rook jumps to its other side.
+  const int col_change = col_of(move.to) - col_of(move.from);
+  if(piece.type == PieceType::King && std::abs(col_change) == CASTLING_KING_STEP) {
+    const int row = row_of(move.from);
+    const bool kingside = col_change > 0;
+    const Square rook_from =
+        square_at(kingside ? KINGSIDE_ROOK_FROM_COL : QUEENSIDE_ROOK_FROM_COL, row);
+    const Square rook_to = square_at(kingside ? KINGSIDE_ROOK_TO_COL : QUEENSIDE_ROOK_TO_COL, row);
+    next.board_.at(index_of(rook_to)) = next.board_.at(index_of(rook_from));
+    next.board_.at(index_of(rook_from)) = std::nullopt;
+  }
+
+  if(piece.type == PieceType::King) {
+    if(piece.colour == Colour::White) {
+      next.castling_.white_kingside = false;
+      next.castling_.white_queenside = false;
+    } else {
+      next.castling_.black_kingside = false;
+      next.castling_.black_queenside = false;
+    }
+  }
+  clear_corner_right(next.castling_, move.from);
+  clear_corner_right(next.castling_, move.to);
+
+  next.en_passant_ = std::nullopt;
+  const int row_change = row_of(move.to) - row_of(move.from);
+  if(is_pawn && std::abs(row_change) == DOUBLE_PUSH_STEP)
+    next.en_passant_ = square_at(col_of(move.from), (row_of(move.from) + row_of(move.to)) / 2);
+
+  next.halfmove_clock_ = (is_pawn || is_capture) ? 0 : halfmove_clock_ + 1;
+  if(side_to_move_ == Colour::Black) ++next.fullmove_number_;
+  next.side_to_move_ = side_to_move_ == Colour::White ? Colour::Black : Colour::White;
+  return next;
+}
 
 } // namespace chess

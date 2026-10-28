@@ -45,4 +45,13 @@ struct Piece {
 };
 
 using Board = std::array<std::optional<Piece>, SQUARE_COUNT>;
+
+struct Move {
+  Square from;
+  Square to;
+  std::optional<PieceType> promotion; // Set only when a pawn promotes
+
+  bool operator==(const Move&) const = default;
+};
+
 } // namespace chess
