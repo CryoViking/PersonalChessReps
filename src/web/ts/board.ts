@@ -52,10 +52,27 @@ const PIECE_NAMES: Record<Piece, string> = {
   k: "black king",
 };
 
+// Which way around the board is drawn, False: White at the bottom. True: Black at the
+// bottom (rotated 180 degrees). A view setting only; the position itself never changes.
+let flipped = false;
+export function setFlipped(value: boolean) {
+  flipped = value;
+}
+export function isFlipped(): boolean {
+  return flipped;
+}
+
+// Screen position -> board square.
 export function squareAtDisplay(displayCol: number, displayRow: number): Square {
-  const row = 7 - displayRow;
-  const col = displayCol;
+  const col = flipped ? 7 - displayCol : displayCol;
+  const row = flipped ? displayRow : 7 - displayRow;
   return squareAt(col, row);
+}
+
+export function squareCenter(square: Square): Point {
+  const displayCol = flipped ? 7 - colOf(square) : colOf(square);
+  const displayRow = flipped ? rowOf(square) : 7 - rowOf(square);
+  return { x: displayCol + 0.5, y: displayRow + 0.5 };
 }
 
 function offset(p: Point, direction: Point, distance: number): Point {
@@ -71,11 +88,6 @@ function unit(from: Point, to: Point): Point {
 // The direction rotated 90 degress: points sideways, used to give a leg its width.
 function normal(direction: Point): Point {
   return { x: -direction.y, y: direction.x };
-}
-
-export function squareCenter(square: Square): Point {
-  const displayRow = 7 - rowOf(square);
-  return { x: colOf(square) + 0.5, y: displayRow + 0.5 };
 }
 
 const FILES = "abcdefgh";

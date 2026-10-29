@@ -1,19 +1,31 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 
-<div id="board" class="board">
-  <div class="board-squares"></div>
-  <div class="board-highlights"></div>
-  <div class="board-pieces"></div>
-  <svg class="board-arrows" viewBox="0 0 8 8" aria-hidden="true">
-    <g class="arrow-lines"></g>
-  </svg>
-  <div class="board-drag"></div>
-  <div class="board-promotion"></div>
+<div class="layout">
+  <div id="board" class="board">
+    <div class="board-squares"></div>
+    <div class="board-highlights"></div>
+    <div class="board-pieces"></div>
+    <svg class="board-arrows" viewBox="0 0 8 8" aria-hidden="true">
+      <g class="arrow-lines"></g>
+    </svg>
+    <div class="board-drag"></div>
+    <div class="board-promotion"></div>
+  </div>
+
+  <div class="board-controls">
+    <button type="button" id="flip-button" class="icon-button" title="Flip board (F)" aria-label="Flip board">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round" aria-hidden="true">
+        <path d="M20 12 a8 8 0 0 1 -14.9 4" />
+        <path d="M4 12 a8 8 0 0 1 14.9-4" />
+        <polyline points="19 3 19 8 14 8" />
+        <polyline points="5 21 5 16 10 16" />
+      </svg>
+    </button>
+  </div>
 </div>
 
-<!-- <button type="button" id="ping-button">Ping C++</button> -->
-<!-- <button type="button" id="fail-ping-button">Fail to ping C++</button> -->
-<!-- <p id="result">No Reply yet.</p> -->
+
 
 <script type="module" src="./ts/main.ts"></script>

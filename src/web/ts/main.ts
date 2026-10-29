@@ -1,12 +1,14 @@
 import "../css/board.css";
 import {
   type Arrow,
+  isFlipped,
   positionDragPiece,
   renderArrows,
   renderDragPiece,
   renderHighlights,
   renderPieces,
   renderSquares,
+  setFlipped,
 } from "./board";
 import type { PositionState } from "./bridge";
 import {
@@ -220,3 +222,19 @@ board.addEventListener("pointercancel", () => {
 board.addEventListener("contextmenu", (event) => {
   event.preventDefault();
 });
+
+function flipBoard(): void {
+  if (busy) return;
+  setFlipped(!isFlipped());
+  renderSquares(squaresLayer); // the coordinate labels change sides.
+  redraw();
+}
+
+// "f" flips the board, as on Lichess. It's fine to listen on the entire document
+// because it isn't a browser, it's a standalone application.
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "f" || event.repeat || busy) return;
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+  flipBoard();
+});
+requireElement<HTMLButtonElement>("#flip-button").addEventListener("click", flipBoard);

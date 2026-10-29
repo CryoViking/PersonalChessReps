@@ -10,6 +10,12 @@
   --promotion-bg: #ffffff;
   --promotion-hover: #e2e2e2;
   --promotion-focus: #4a90d9;
+  --control-bg: #3d3a36;
+  --control-bg-hover: #4b4843;
+  --control-fg: #bab8b4;
+  --control-fg-hover: #ffffff;
+  --control-size: 40px;
+  --control-gap: 12px;
 }
 
 /* The page: no default margin, full window height, board centred */
@@ -21,10 +27,54 @@ body {
   place-items: center;
 }
 
-/* The board frame: the reference box its layers position against */
+/* Board and controls side by side; body centres the pair. The controls sit level
+   with the board's bottom edge. */
+.layout {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--control-gap);
+}
+
+/* A column of icon buttons beside the board */
+.board-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--control-gap);
+}
+
+.icon-button {
+  width: var(--control-size);
+  height: var(--control-size);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-fg);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--control-bg-hover);
+  color: var(--control-fg-hover);
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid var(--promotion-focus);
+  outline-offset: 2px;
+}
+
+.icon-button svg {
+  width: 60%;
+  height: 60%;
+}
+
+/* The board frame: the reference box its layers position against.
+   Its width leaves room for the controls column so the pair fits the window. */
 .board {
   position: relative;
-  width: min(80vh, 80vw);
+  width: min(80vh, 80vw - var(--control-size) - var(--control-gap));
   aspect-ratio: 1;
   /* Lets children size things in cqw: 1cqw = 1% of the board's width (a square is 12.5cqw) */
   container-type: inline-size;
