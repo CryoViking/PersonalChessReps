@@ -58,7 +58,8 @@ fetchcontent_makeavailable(webview nlohmann_json)
 add_library(pcr_core STATIC
   src/cpp/chess/position.cpp
   src/cpp/chess/perft.cpp
-  src/cpp/chess/uci.cpp)
+  src/cpp/chess/uci.cpp
+  src/cpp/chess/san.cpp)
 target_include_directories(pcr_core PUBLIC src/cpp)
 
 add_executable(pcr
@@ -82,7 +83,8 @@ if(BUILD_TESTING)
     tests/cpp/attack_tests.cpp
     tests/cpp/movegen_tests.cpp
     tests/cpp/perft_tests.cpp
-    tests/cpp/uci_tests.cpp)
+    tests/cpp/uci_tests.cpp
+    tests/cpp/san_tests.cpp)
   target_link_libraries(pcr_tests PRIVATE pcr_core Catch2::Catch2WithMain)
 
   # Catch2 shipa a CMake module that registers each TEST_CASE with CTest.
