@@ -12,6 +12,7 @@
 #include <webview/webview.h>
 
 #include "chess/position.hpp"
+#include "chess/san.hpp"
 #include "chess/types.hpp"
 #include "chess/uci.hpp"
 
@@ -71,9 +72,13 @@ Json handle_play(const Json& args) {
 
   const auto position = chess::Position::from_fen(fen);
   const auto legal = position.legal_moves();
-  if(std::ranges::find(legal, *move) == legal.end())
+  if(std::ranges::find(legal, *move) == legal.end()) {
     throw std::invalid_argument("illegal move " + uci + " in " + fen);
-  return position_state(position.make_move(*move));
+  }
+  // The SAN is worked out from the position the move is played in, before it's made.
+  Json reply = position_state(position.make_move(*move));
+  reply["san"] = chess::move_to_san(position, *move);
+  return reply;
 }
 
 } // namespace

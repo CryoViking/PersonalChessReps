@@ -37,7 +37,7 @@ function requireElement<T extends Element>(selector: string) {
 
 // Game state: every position reached so far, and which one is on the board. Each entry
 // keeps the move that led to it, for the last-move highlight.
-type HistoryEntry = { state: PositionState; move: Move | null };
+type HistoryEntry = { state: PositionState; move: Move | null; san: string | null };
 
 const history: HistoryEntry[] = [];
 let current = 0;
@@ -63,7 +63,7 @@ loadBoardSize(boardArea);
 enableBoardResize(requireElement<HTMLElement>("#resize-handle"), board, boardArea);
 
 renderSquares(squaresLayer);
-history.push({ state: await getPosition(START_FEN), move: null });
+history.push({ state: await getPosition(START_FEN), move: null, san: null });
 redraw();
 
 function currentEntry(): HistoryEntry {
@@ -116,7 +116,7 @@ async function makeMove(from: Square, to: Square): Promise<void> {
 
     const state = await playMove(currentEntry().state.fen, uci);
     history.splice(current + 1);
-    history.push({ state, move: { from, to } });
+    history.push({ state, move: { from, to }, san: state.san });
     current = history.length - 1;
   } catch (error) {
     console.error(error);
