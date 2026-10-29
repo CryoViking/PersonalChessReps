@@ -33,8 +33,8 @@ export function enableBoardResize(
   board: HTMLElement,
   area: HTMLElement,
 ): void {
-  // Where the drag began, The board is centered, so its corner moves half as far as the
-  // board grows: growing by twice the pointer's movement keeps the corner under it.
+  // Where the drag began. The board grows from its top-right corner, so dragging the
+  // handle down grows it and up shrinks it; the handle stays under the pointer vertically.
   let start: { x: number; y: number; size: number } | null = null;
 
   handle.addEventListener("pointerdown", (event) => {
@@ -45,8 +45,8 @@ export function enableBoardResize(
 
   handle.addEventListener("pointermove", (event) => {
     if (start == null) return;
-    const moved = Math.max(event.clientX - start.x, event.clientY - start.y);
-    applySize(area, Math.max(MIN_BOARD_SIZE, start.size + 2 * moved));
+    const moved = event.clientY - start.y;
+    applySize(area, Math.max(MIN_BOARD_SIZE, start.size + moved));
   });
 
   const finish = () => {

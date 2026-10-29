@@ -16,6 +16,12 @@
   --control-fg-hover: #ffffff;
   --control-size: 40px;
   --control-gap: 12px;
+  --panel-bg: #262421;
+  --panel-row-alt: #2b2926;
+  --panel-fg: #e0dedb;
+  --panel-muted: #8b8987;
+  --panel-current: #4b4847;
+  --panel-width: 320px;
 }
 
 /* The page: no default margin, page colour behind everything */
@@ -24,27 +30,36 @@ body {
   background: var(--page-bg);
 }
 
-/* The window, split into areas. For now just the board area; side panels will sit
-   beside it later. */
+/* The window: centres the board area within it. */
 .layout {
   width: 100vw;
   height: 100vh;
   box-sizing: border-box;
   padding: 2vh 2vw;
   display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-/* The outer box: takes the space it's given and never more, so resizing the board can't
-   push other panels around. A size container, so the board can be clamped to it with
-   cqw/cqh. The board is centred, so it grows in every direction as it's resized;
-   boardSize.ts accounts for that. */
+/* The board, its controls and the move panel as one row, centred in the window. The area
+   is always sized for the largest board (--area-board) plus everything beside it. Inside
+   it the row is centred horizontally and anchored to the top: as the board shrinks, its
+   left edge and the panel's right edge move in towards the middle by the same amount,
+   and its bottom edge (where the resize handle is) rises. A size container, so the board
+   can be clamped to it. */
 .board-area {
-  --board-size: 80vh; /* default wish; boardSize.ts overrides it */
-  flex: 1;
-  min-width: 0;
+  --side-width: calc(var(--control-size) + var(--panel-width) + 2 * var(--control-gap));
+  --area-board: min(96vh, 96vw - var(--side-width));
+  --board-default: min(80vh, var(--area-board));
+  --board-size: var(--board-default); /* default wish; boardSize.ts overrides it */
+  flex: none;
+  width: calc(var(--area-board) + var(--side-width));
+  height: var(--area-board);
   container-type: size;
-  display: grid;
-  place-items: center;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: var(--control-gap);
 }
 
 /* The board plus its controls. Controls sit level with the board's bottom edge, so the
@@ -94,7 +109,7 @@ body {
    asked for, clamped so the board and its controls always fit the area. */
 .board {
   position: relative;
-  width: min(var(--board-size), 100cqh, 100cqw - var(--control-size) - var(--control-gap));
+  width: min(var(--board-size), 100cqh, 100cqw - var(--side-width));
   aspect-ratio: 1;
   /* Lets children size things in cqw: 1cqw = 1% of the board's width (a square is 12.5cqw) */
   container-type: inline-size;
@@ -272,4 +287,105 @@ body {
 .resize-handle {
   cursor: nwse-resize;
   touch-action: none;
+}
+
+/* Move panel: a fixed-width column beside the board, as tall as the largest board, so
+   its height never changes. The move list scrolls; the navigation buttons stay pinned
+   to the bottom. */
+.side-panel {
+  width: var(--panel-width);
+  height: 100cqh; /* the full area: the largest board's height */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  background: var(--panel-bg);
+  color: var(--panel-fg);
+  font-family: system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.move-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+/* One full move per row: number, White's move, Black's move */
+.move-row {
+  display: grid;
+  grid-template-columns: 3.5em 1fr 1fr;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.move-row:nth-child(even) {
+  background: var(--panel-row-alt);
+}
+
+.move-number,
+.move-gap {
+  padding: 6px 8px;
+  color: var(--panel-muted);
+}
+
+.move {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.move:hover {
+  background: var(--control-bg);
+}
+
+.move.current {
+  background: var(--panel-current);
+  color: var(--control-fg-hover);
+}
+
+.move:focus-visible {
+  outline: 2px solid var(--promotion-focus);
+  outline-offset: -2px;
+}
+
+/* Navigation: four equal buttons along the bottom */
+.move-nav {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+
+.nav-button {
+  height: var(--control-size);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--control-bg);
+  color: var(--control-fg);
+  cursor: pointer;
+}
+
+.nav-button:hover {
+  background: var(--control-bg-hover);
+  color: var(--control-fg-hover);
+}
+
+.nav-button:focus-visible {
+  outline: 2px solid var(--promotion-focus);
+  outline-offset: 2px;
+}
+
+.nav-button svg {
+  height: 55%;
 }

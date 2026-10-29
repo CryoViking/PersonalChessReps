@@ -23,6 +23,7 @@ import {
   squareName,
 } from "./chess";
 import { pointerToBoard, squareFromPointer } from "./input";
+import { renderMoveList } from "./moveList";
 import { choosePromotion } from "./promotion";
 import { getPosition, playMove } from "./rules";
 
@@ -61,6 +62,7 @@ const board = requireElement<HTMLElement>("#board");
 const boardArea = requireElement<HTMLElement>(".board-area");
 loadBoardSize(boardArea);
 enableBoardResize(requireElement<HTMLElement>("#resize-handle"), board, boardArea);
+const moveListElement = requireElement<HTMLElement>(".move-list");
 
 renderSquares(squaresLayer);
 history.push({ state: await getPosition(START_FEN), move: null, san: null });
@@ -146,6 +148,24 @@ function redraw(): void {
   renderPieces(piecesLayer, currentBoard(), leftDrag?.from ?? null);
   renderHighlights(highlightsLayer, selectedSquare, markedSquares, currentEntry().move);
   renderArrows(arrowsLayer, shown);
+  renderMoveList(
+    moveListElement,
+    history[0]?.state.fen ?? START_FEN,
+    history.slice(1).map((entry) => entry.san ?? ""),
+    current,
+    goTo,
+  );
+}
+
+// Shows the position at `index` in the history, clamped ot the ends. Selection and
+// annotations belong to the position being left, so they're cleared.
+function goTo(index: number): void {
+  if (busy || leftDrag !== null) return;
+  current = Math.min(Math.max(index, 0), history.length - 1);
+  selectedSquare = null;
+  markedSquares.clear();
+  arrows.length = 0;
+  redraw();
 }
 
 board.addEventListener("pointerdown", (event) => {
@@ -238,8 +258,35 @@ function flipBoard(): void {
 // "f" flips the board, as on Lichess. It's fine to listen on the entire document
 // because it isn't a browser, it's a standalone application.
 document.addEventListener("keydown", (event) => {
-  if (event.key !== "f" || event.repeat || busy) return;
   if (event.metaKey || event.ctrlKey || event.altKey) return;
-  flipBoard();
+
+  switch (event.key) {
+    case "f": // as on Lichess
+      if (!event.repeat) flipBoard();
+      break;
+    case "ArrowLeft":
+      event.preventDefault(); // stop the page scrolling as well
+      goTo(current - 1);
+      break;
+    case "ArrowRight":
+      event.preventDefault();
+      goTo(current + 1);
+      break;
+    case "Home":
+      event.preventDefault();
+      goTo(0);
+      break;
+    case "End":
+      event.preventDefault();
+      goTo(history.length - 1);
+      break;
+  }
 });
+
 requireElement<HTMLButtonElement>("#flip-button").addEventListener("click", flipBoard);
+requireElement<HTMLButtonElement>("#nav-first").addEventListener("click", () => goTo(0));
+requireElement<HTMLButtonElement>("#nav-prev").addEventListener("click", () => goTo(current - 1));
+requireElement<HTMLButtonElement>("#nav-next").addEventListener("click", () => goTo(current + 1));
+requireElement<HTMLButtonElement>("#nav-last").addEventListener("click", () =>
+  goTo(history.length - 1),
+);
