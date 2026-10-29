@@ -113,6 +113,14 @@ export function renderSquares(container: HTMLElement): void {
   container.replaceChildren(...cells);
 }
 
+// An <img> of `piece`, with alt text.
+export function pieceImage(piece: Piece): HTMLImageElement {
+  const image = document.createElement("img");
+  image.src = PIECE_IMAGES[piece];
+  image.alt = PIECE_NAMES[piece];
+  return image;
+}
+
 export function renderPieces(container: HTMLElement, board: Board, hidden: Square | null): void {
   const cells: HTMLDivElement[] = [];
 
@@ -122,13 +130,7 @@ export function renderPieces(container: HTMLElement, board: Board, hidden: Squar
       const square = squareAtDisplay(displayCol, displayRow);
       const piece = square === hidden ? null : board[square];
 
-      if (piece) {
-        const image = document.createElement("img");
-        image.src = PIECE_IMAGES[piece];
-        image.alt = PIECE_NAMES[piece];
-        cell.append(image);
-      }
-
+      if (piece) cell.append(pieceImage(piece));
       cells.push(cell);
     }
   }
@@ -143,10 +145,8 @@ export function renderDragPiece(layer: HTMLElement, piece: Piece | null): void {
     return;
   }
 
-  const image = document.createElement("img");
+  const image = pieceImage(piece);
   image.classList.add("drag-piece");
-  image.src = PIECE_IMAGES[piece];
-  image.alt = PIECE_NAMES[piece];
   layer.replaceChildren(image);
 }
 

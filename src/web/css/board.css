@@ -6,6 +6,10 @@
   --highlight-selected: rgb(255 255 51 / 50%);
   --highlight-marked: rgb(235 97 80 / 80%);
   --arrow: rgb(255 170 0);
+  --promotion-dim: rgb(0 0 0 / 30%);
+  --promotion-bg: #ffffff;
+  --promotion-hover: #e2e2e2;
+  --promotion-focus: #4a90d9;
 }
 
 /* The page: no default margin, full window height, board centred */
@@ -131,6 +135,65 @@ body {
   width: 12.5%;
   height: 12.5%;
   transform: translate(-50%, -50%);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Promotion picker layer: click-through while closed. When open it dims the board and
+   catches every press, so a click outside the column cancels. */
+.board-promotion {
+  pointer-events: none;
+}
+
+.board-promotion.open {
+  pointer-events: auto;
+  background: var(--promotion-dim);
+}
+
+/* The four choices: one square wide, four tall, on the promotion file (TS sets left).
+   The queen sits on the promotion square, so Black's column runs bottom-up. */
+.promotion-column {
+  position: absolute;
+  width: 12.5%;
+  height: 50%;
+  display: flex;
+  flex-direction: column;
+  background: var(--promotion-bg);
+  box-shadow: 0 0.5cqw 2cqw rgb(0 0 0 / 50%);
+}
+
+.promotion-column.from-top {
+  top: 0;
+}
+
+.promotion-column.from-bottom {
+  bottom: 0;
+  flex-direction: column-reverse;
+}
+
+.promotion-column button {
+  flex: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.promotion-column button:hover {
+  background: var(--promotion-hover);
+}
+
+.promotion-column button:focus-visible {
+  outline: 0.4cqw solid var(--promotion-focus);
+  outline-offset: -0.4cqw;
+}
+
+/* The image only decorates its button: clicks belong to the button. */
+.promotion-column img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
 }

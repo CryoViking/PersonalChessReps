@@ -20,6 +20,7 @@ import {
   squareName,
 } from "./chess";
 import { pointerToBoard, squareFromPointer } from "./input";
+import { choosePromotion } from "./promotion";
 import { getPosition, playMove } from "./rules";
 
 const LEFT_CLICK = 0;
@@ -51,6 +52,7 @@ const piecesLayer = requireElement<HTMLElement>(".board-pieces");
 const highlightsLayer = requireElement<HTMLElement>(".board-highlights");
 const arrowsLayer = requireElement<SVGGElement>(".arrow-lines");
 const dragLayer = requireElement<HTMLElement>(".board-drag");
+const promotionLayer = requireElement<HTMLElement>(".board-promotion");
 const board = requireElement<HTMLElement>("#board");
 
 renderSquares(squaresLayer);
@@ -68,34 +70,43 @@ function currentBoard(): Board {
   return boardFromFen(fen.slice(0, fen.indexOf(" ")));
 }
 
-// Can this piece be picked up? Only the side to move's pieces can.
-function isMovable(piece: Piece): boolean {
-  const whiteToMove = currentEntry().state.fen.split(" ")[1] === "w";
-  return isWhite(piece) === whiteToMove;
+function whiteToMove(): boolean {
+  return currentEntry().state.fen.split(" ")[1] === "w";
 }
 
-// The UCI text for from -> to if it's legal, else null. Promotions become a queen for
-// now; a picker comes later.
-function legalUci(from: Square, to: Square): string | null {
+// Can this piece be picked up? Only the side to move's pieces can.
+function isMovable(piece: Piece): boolean {
+  return isWhite(piece) === whiteToMove();
+}
+
+// Whether from -> to is legal, and if so whether it needs a promotion piece chosen.
+function moveKind(from: Square, to: Square): "move" | "promotion" | null {
   const uci = squareName(from) + squareName(to);
   const legal = currentEntry().state.legalMoves;
-  if (legal.includes(uci)) return uci;
-  if (legal.includes(`${uci}q`)) return `${uci}q`;
+  if (legal.includes(uci)) return "move";
+  if (legal.includes(`${uci}q`)) return "promotion";
   return null;
 }
 
 function canMoveTo(from: Square, to: Square): boolean {
-  return legalUci(from, to) !== null;
+  return moveKind(from, to) !== null;
 }
 
 // Asks C++ to play the move, then shows the new position. Anything after the current
 // position is dropped first, so playing from an earlier position starts a new line.
 async function makeMove(from: Square, to: Square): Promise<void> {
-  const uci = legalUci(from, to);
-  if (uci === null || busy) return;
+  const kind = moveKind(from, to);
+  if (kind === null || busy) return;
 
   busy = true;
   try {
+    let uci = squareName(from) + squareName(to);
+    if (kind === "promotion") {
+      const letter = await choosePromotion(promotionLayer, to, whiteToMove());
+      if (letter === null) return; // cancelled; `finally` still runs.
+      uci += letter;
+    }
+
     const state = await playMove(currentEntry().state.fen, uci);
     history.splice(current + 1);
     history.push({ state, move: { from, to } });
@@ -177,9 +188,8 @@ board.addEventListener("pointerup", (event) => {
   if (event.button === LEFT_CLICK && leftDrag !== null) {
     const end = squareFromPointer(board, event);
 
-    if (end !== null && end !== leftDrag.from && canMoveTo(leftDrag.from, end)) {
+    if (end !== null && end !== leftDrag.from && canMoveTo(leftDrag.from, end))
       void makeMove(leftDrag.from, end);
-    }
 
     // Only a first click (released where it was pressed) keeps the piece selected.
     const isFirstClicked = end === leftDrag.from && !leftDrag.wasSelected;
