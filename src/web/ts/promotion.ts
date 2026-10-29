@@ -28,11 +28,12 @@ export function choosePromotion(
       resolve(choice);
     };
 
-    // A one-square-wide column on the promotion square's file, reaching into the board:
-    // down from the top edge for White, up from the bottom edge for Black.
+    // A one-square-wide column on the promotion square's file, reaching into the board
+    // from whichever edge that square is drawn on (this depends on the board's flip).
     const center = squareCenter(square);
+    const fromTop = center.y < 4;
     const column = document.createElement("div");
-    column.classList.add("promotion-column", white ? "from-top" : "from-bottom");
+    column.classList.add("promotion-column", fromTop ? "from-top" : "from-bottom");
     column.style.left = `${(center.x - 0.5) * 12.5}%`;
 
     const pieces = white ? WHITE_PIECES : BLACK_PIECES;

@@ -2,7 +2,7 @@
 // available. Dragging the handle changes the wish, and it's remembered between sessions.
 
 const STORAGE_KEY = "pcr.boardSize";
-const MIN_BOARD_SIZE = 240; // px: small enough to make room, big enough to play on
+const MIN_BOARD_SIZE = 720; // px: small enough to make room, big enough to play on
 
 function applySize(area: HTMLElement, size: number): void {
   area.style.setProperty("--board-size", `${size}px`);
