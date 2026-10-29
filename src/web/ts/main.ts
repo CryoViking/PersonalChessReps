@@ -168,6 +168,14 @@ function goTo(index: number): void {
   redraw();
 }
 
+// Back to the starting position, discarding every move played. Orientation and board size
+// are view settings, so they stay as they are.
+function resetBoard(): void {
+  if (busy || leftDrag !== null) return;
+  history.length = 1; // keep only the starting position
+  goTo(0);
+}
+
 board.addEventListener("pointerdown", (event) => {
   const square = squareFromPointer(board, event);
   if (event.button === LEFT_CLICK) {
@@ -290,3 +298,4 @@ requireElement<HTMLButtonElement>("#nav-next").addEventListener("click", () => g
 requireElement<HTMLButtonElement>("#nav-last").addEventListener("click", () =>
   goTo(history.length - 1),
 );
+requireElement<HTMLButtonElement>("#reset-board").addEventListener("click", resetBoard);

@@ -22,6 +22,8 @@
   --panel-muted: #8b8987;
   --panel-current: #4b4847;
   --panel-width: 320px;
+  --sidebar-width: 200px;
+  --sidebar-bg: #262421;
 }
 
 /* The page: no default margin, page colour behind everything */
@@ -49,7 +51,9 @@ body {
    can be clamped to it. */
 .board-area {
   --side-width: calc(var(--control-size) + var(--panel-width) + 2 * var(--control-gap));
-  --area-board: min(96vh, 96vw - var(--side-width));
+  /* The sidebar's width is reserved on both sides, so the centred group never slides
+     under it. */
+  --area-board: min(96vh, 96vw - var(--side-width) - 2 * var(--sidebar-width));
   --board-default: min(80vh, var(--area-board));
   --board-size: var(--board-default); /* default wish; boardSize.ts overrides it */
   flex: none;
@@ -388,4 +392,52 @@ body {
 
 .nav-button svg {
   height: 55%;
+}
+
+/* Main menu: pinned to the window's left edge, on top of the layout rather than part of
+   it, so the board group stays centred in the whole window. */
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar-width);
+  box-sizing: border-box;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--sidebar-bg);
+  font-family: system-ui, sans-serif;
+}
+
+.sidebar-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--control-fg);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar-button:hover {
+  background: var(--control-bg);
+  color: var(--control-fg-hover);
+}
+
+.sidebar-button:focus-visible {
+  outline: 2px solid var(--promotion-focus);
+  outline-offset: -2px;
+}
+
+.sidebar-button svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
