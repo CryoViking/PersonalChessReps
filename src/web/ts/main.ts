@@ -10,6 +10,7 @@ import {
   renderSquares,
   setFlipped,
 } from "./board";
+import { enableBoardResize, loadBoardSize } from "./boardSize";
 import type { PositionState } from "./bridge";
 import {
   type Board,
@@ -55,7 +56,11 @@ const highlightsLayer = requireElement<HTMLElement>(".board-highlights");
 const arrowsLayer = requireElement<SVGGElement>(".arrow-lines");
 const dragLayer = requireElement<HTMLElement>(".board-drag");
 const promotionLayer = requireElement<HTMLElement>(".board-promotion");
+
 const board = requireElement<HTMLElement>("#board");
+const boardArea = requireElement<HTMLElement>(".board-area");
+loadBoardSize(boardArea);
+enableBoardResize(requireElement<HTMLElement>("#resize-handle"), board, boardArea);
 
 renderSquares(squaresLayer);
 history.push({ state: await getPosition(START_FEN), move: null });

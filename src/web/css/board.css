@@ -18,18 +18,38 @@
   --control-gap: 12px;
 }
 
-/* The page: no default margin, full window height, board centred */
+/* The page: no default margin, page colour behind everything */
 body {
   margin: 0;
-  min-height: 100vh;
   background: var(--page-bg);
+}
+
+/* The window, split into areas. For now just the board area; side panels will sit
+   beside it later. */
+.layout {
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 2vh 2vw;
+  display: flex;
+}
+
+/* The outer box: takes the space it's given and never more, so resizing the board can't
+   push other panels around. A size container, so the board can be clamped to it with
+   cqw/cqh. The board is centred, so it grows in every direction as it's resized;
+   boardSize.ts accounts for that. */
+.board-area {
+  --board-size: 80vh; /* default wish; boardSize.ts overrides it */
+  flex: 1;
+  min-width: 0;
+  container-type: size;
   display: grid;
   place-items: center;
 }
 
-/* Board and controls side by side; body centres the pair. The controls sit level
-   with the board's bottom edge. */
-.layout {
+/* The board plus its controls. Controls sit level with the board's bottom edge, so the
+   resize handle is at its bottom-right corner. */
+.board-frame {
   display: flex;
   align-items: flex-end;
   gap: var(--control-gap);
@@ -70,11 +90,11 @@ body {
   height: 60%;
 }
 
-/* The board frame: the reference box its layers position against.
-   Its width leaves room for the controls column so the pair fits the window. */
+/* The board: the reference box its layers position against. Its width is the size
+   asked for, clamped so the board and its controls always fit the area. */
 .board {
   position: relative;
-  width: min(80vh, 80vw - var(--control-size) - var(--control-gap));
+  width: min(var(--board-size), 100cqh, 100cqw - var(--control-size) - var(--control-gap));
   aspect-ratio: 1;
   /* Lets children size things in cqw: 1cqw = 1% of the board's width (a square is 12.5cqw) */
   container-type: inline-size;
@@ -246,4 +266,10 @@ body {
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+/* The resize handle: drag it, don't click it */
+.resize-handle {
+  cursor: nwse-resize;
+  touch-action: none;
 }
